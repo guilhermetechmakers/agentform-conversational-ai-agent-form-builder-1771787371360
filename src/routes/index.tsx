@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
+import { AdminLayout } from '@/layouts/admin-layout'
 import { LandingPage } from '@/pages/landing'
 import { PricingPage } from '@/pages/pricing'
 import { LoginSignupPage } from '@/pages/auth/login-signup'
@@ -29,6 +30,13 @@ import { PrivacyPolicyPage } from '@/pages/legal/privacy'
 import { TermsOfServicePage } from '@/pages/legal/terms'
 import { NotFoundPage } from '@/pages/errors/not-found'
 import { ServerErrorPage } from '@/pages/errors/server-error'
+import {
+  AdminOverviewPage,
+  AdminUsersPage,
+  AdminAgentsPage,
+  AdminLogsPage,
+  AdminBillingPage,
+} from '@/pages/admin'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('access_token')
@@ -71,6 +79,21 @@ export const router = createBrowserRouter([
           { path: 'data-privacy', element: <DataPrivacySection /> },
         ],
       },
+    ],
+  },
+  {
+    path: '/admin',
+    element: (
+      <ProtectedRoute>
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <AdminOverviewPage /> },
+      { path: 'users', element: <AdminUsersPage /> },
+      { path: 'agents', element: <AdminAgentsPage /> },
+      { path: 'logs', element: <AdminLogsPage /> },
+      { path: 'billing', element: <AdminBillingPage /> },
     ],
   },
   { path: '/a/:publicId', element: <PublicChatPage /> },

@@ -14,6 +14,7 @@ import {
   LogOut,
   User,
   CreditCard,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,7 @@ const navItems = [
   { to: '/dashboard/sessions', icon: MessageSquare, label: 'Sessions' },
   { to: '/dashboard/settings', icon: Settings, label: 'Settings' },
   { to: '/help', icon: HelpCircle, label: 'Help' },
+  { to: '/admin', icon: Shield, label: 'Admin', adminOnly: true },
 ]
 
 export function DashboardLayout() {
@@ -109,6 +111,8 @@ export function DashboardLayout() {
           <nav className="space-y-1 px-3">
             {navItems.map((item) => {
               const Icon = item.icon
+              const adminOnly = 'adminOnly' in item && item.adminOnly
+              if (adminOnly && user?.role !== 'admin') return null
               const isActive = location.pathname === item.to || location.pathname.startsWith(item.to + '/')
               return (
                 <Link
@@ -178,6 +182,8 @@ export function DashboardLayout() {
           <nav className="space-y-1 px-3">
             {navItems.map((item) => {
               const Icon = item.icon
+              const adminOnly = 'adminOnly' in item && item.adminOnly
+              if (adminOnly && user?.role !== 'admin') return null
               const isActive = location.pathname === item.to
               return (
                 <Link
