@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import * as Tabs from '@radix-ui/react-tabs'
 import {
   Download,
   RefreshCw,
@@ -16,6 +15,12 @@ import {
   FileText,
   Loader2,
 } from 'lucide-react'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,15 +28,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import * as sessionsApi from '@/api/sessions'
+import { ExportModal } from './export-modal'
+import { ReplayModal } from './replay-modal'
 import type { SessionDetailResponse } from '@/types/sessions'
 
 interface SessionDetailPaneProps {
@@ -54,43 +55,40 @@ export function SessionDetailPane({
   isLoading,
   onRefetch,
 }: SessionDetailPaneProps) {
-  const [isExporting, setIsExporting] = useState(false)
-  const [isReplaying, setIsReplaying] = useState(false)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [replayModalOpen, setReplayModalOpen] = useState(false)
   const [forwardEmail, setForwardEmail] = useState('')
   const [isForwarding, setIsForwarding] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [isAddingComment, setIsAddingComment] = useState(false)
   const [isUpdatingReviewed, setIsUpdatingReviewed] = useState(false)
 
-  const handleExport = async (format: 'csv' | 'json') => {
-    if (!session) return
-    setIsExporting(true)
-    try {
-      const res = await sessionsApi.exportSession(session.id, format)
-      if (res.download_url) {
-        window.open(res.download_url, '_blank')
-        toast.success('Export started')
-      } else {
-        toast.success('Export completed')
+  const handleExport = async (format: 'csv' | 'json', ids: string[]) => {
+    if (ids.length === 0) return
+    for (const id of ids) {
+      try {
+        const res = await sessionsApi.exportSession(id, format)
+        if (res.download_url) {
+          window.open(res.download_url, '_blank')
+        }
+      } catch {
+        // Fallback for mock
       }
-    } catch {
-      toast.success('Export completed (mock)')
-    } finally {
-      setIsExporting(false)
     }
+    toast.success('Export started')
+    setExportModalOpen(false)
   }
 
-  const handleReplayWebhook = async () => {
+  const handleReplayWebhook = async (id: string) => {
     if (!session) return
-    setIsReplaying(true)
     try {
-      await sessionsApi.replayWebhook(session.id)
+      await sessionsApi.replayWebhook(id)
       toast.success('Webhook replayed')
+      setReplayModalOpen(false)
       onRefetch?.()
     } catch {
       toast.success('Webhook replayed (mock)')
-    } finally {
-      setIsReplaying(false)
+      setReplayModalOpen(false)
     }
   }
 
@@ -200,7 +198,11 @@ export function SessionDetailPane({
               <p className="font-medium text-muted-foreground">Status</p>
               <Badge
                 variant={
-                  session.status === 'completed' ? 'success' : 'secondary'
+                  session.status === 'completed'
+                    ? 'success'
+                    : session.status === 'in-progress'
+                      ? 'warning'
+                      : 'secondary'
                 }
                 className="mt-1"
               >
@@ -266,37 +268,22 @@ export function SessionDetailPane({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={isExporting}>
-                  {isExporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleExport('csv')}>
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('json')}>
-                  Export as JSON
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <Button
               variant="outline"
               size="sm"
-              onClick={handleReplayWebhook}
-              disabled={isReplaying}
+              onClick={() => setExportModalOpen(true)}
+              className="transition-transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              {isReplaying ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setReplayModalOpen(true)}
+              className="transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <RefreshCw className="h-4 w-4" />
               Replay Webhook
             </Button>
             <Button variant="outline" size="sm">
@@ -311,176 +298,174 @@ export function SessionDetailPane({
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs.Root defaultValue="transcript">
-          <Tabs.List className="flex gap-2 border-b border-border mb-6">
-            <Tabs.Trigger
-              value="transcript"
-              className="px-4 py-2 rounded-t-lg text-sm font-medium data-[state=active]:bg-muted data-[state=active]:border-b-2 data-[state=active]:border-primary"
-            >
-              <MessageSquare className="h-4 w-4 mr-2 inline" />
-              Transcript
-            </Tabs.Trigger>
-            <Tabs.Trigger
-              value="extracted"
-              className="px-4 py-2 rounded-t-lg text-sm font-medium data-[state=active]:bg-muted data-[state=active]:border-b-2 data-[state=active]:border-primary"
-            >
-              <Database className="h-4 w-4 mr-2 inline" />
-              Extracted Data
-            </Tabs.Trigger>
-            <Tabs.Trigger
-              value="metadata"
-              className="px-4 py-2 rounded-t-lg text-sm font-medium data-[state=active]:bg-muted data-[state=active]:border-b-2 data-[state=active]:border-primary"
-            >
-              <Info className="h-4 w-4 mr-2 inline" />
-              Metadata
-            </Tabs.Trigger>
-            <Tabs.Trigger
-              value="comments"
-              className="px-4 py-2 rounded-t-lg text-sm font-medium data-[state=active]:bg-muted data-[state=active]:border-b-2 data-[state=active]:border-primary"
-            >
-              <MessageCircle className="h-4 w-4 mr-2 inline" />
-              Comments & Tags
-            </Tabs.Trigger>
-          </Tabs.List>
-
-          <Tabs.Content value="transcript">
-            <div className="space-y-4">
-              {session.transcript.length === 0 ? (
-                <p className="text-muted-foreground">No transcript available</p>
-              ) : (
-                session.transcript.map((msg, i) => (
-                  <div
-                    key={msg.message_id ?? i}
-                    className={cn(
-                      'flex gap-3 p-3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
-                      msg.sender === 'user'
-                        ? 'bg-[rgb(var(--chat-user))]/80 ml-8 border border-border/40'
-                        : 'bg-[rgb(var(--chat-agent))]/80 mr-8 border border-border/40'
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">
-                        {msg.sender === 'user' ? 'Visitor' : 'Agent'}
-                      </p>
-                      <p className="text-sm mt-1">{msg.content}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatTimestamp(msg.timestamp)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Tabs.Content>
-
-          <Tabs.Content value="extracted">
-            <div className="space-y-2">
-              {session.extracted_fields.length === 0 ? (
-                <p className="text-muted-foreground">No extracted fields</p>
-              ) : (
-                session.extracted_fields.map((f) => (
-                  <div
-                    key={f.id}
-                    className="flex justify-between py-2 border-b border-border last:border-0"
-                  >
-                    <span className="font-medium text-sm">{f.field_name}</span>
-                    <span className="text-muted-foreground text-sm">
-                      {f.field_value}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </Tabs.Content>
-
-          <Tabs.Content value="metadata">
-            <div className="space-y-2">
-              {session.metadata?.ip && (
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="font-medium text-sm">IP</span>
-                  <span className="text-muted-foreground text-sm">
-                    {session.metadata.ip}
-                  </span>
-                </div>
-              )}
-              {session.metadata?.user_agent && (
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="font-medium text-sm">User Agent</span>
-                  <span className="text-muted-foreground text-sm break-all max-w-[70%]">
-                    {session.metadata.user_agent}
-                  </span>
-                </div>
-              )}
-              {session.metadata?.referrer && (
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="font-medium text-sm">Referrer</span>
-                  <span className="text-muted-foreground text-sm break-all max-w-[70%]">
-                    {session.metadata.referrer}
-                  </span>
-                </div>
-              )}
-              {!session.metadata?.ip &&
-                !session.metadata?.user_agent &&
-                !session.metadata?.referrer && (
-                  <p className="text-muted-foreground">No metadata available</p>
-                )}
-            </div>
-          </Tabs.Content>
-
-          <Tabs.Content value="comments">
-            <div className="space-y-6">
-              <div>
-                <h4 className="font-medium mb-2">Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {session.tags.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No tags</p>
-                  ) : (
-                    session.tags.map((t) => (
-                      <Badge key={t} variant="secondary">
-                        {t}
-                      </Badge>
-                    ))
+        {/* Transcript - chat-like display */}
+        <div className="mb-6">
+          <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Transcript
+          </h3>
+          <div className="space-y-4">
+            {session.transcript.length === 0 ? (
+              <p className="text-muted-foreground">No transcript available</p>
+            ) : (
+              session.transcript.map((msg, i) => (
+                <div
+                  key={msg.message_id ?? i}
+                  className={cn(
+                    'flex gap-3 p-3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
+                    msg.sender === 'user'
+                      ? 'bg-[rgb(var(--chat-user))]/80 ml-8 border border-border/40'
+                      : 'bg-[rgb(var(--chat-agent))]/80 mr-8 border border-border/40'
                   )}
-                </div>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Comments</h4>
-                {session.comments.map((c) => (
-                  <div
-                    key={c.id}
-                    className="py-2 border-b border-border text-sm"
-                  >
-                    <p>{c.comment_text}</p>
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">
+                      {msg.sender === 'user' ? 'Visitor' : 'Agent'}
+                    </p>
+                    <p className="text-sm mt-1">{msg.content}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatTimestamp(c.created_at)} by {c.created_by}
+                      {formatTimestamp(msg.timestamp)}
                     </p>
                   </div>
-                ))}
-                <div className="mt-4">
-                  <Textarea
-                    placeholder="Add a note..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[80px]"
-                  />
-                  <Button
-                    size="sm"
-                    className="mt-2"
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() || isAddingComment}
-                  >
-                    {isAddingComment ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Collapsible Extracted Fields - below transcript per spec */}
+        <Accordion type="multiple" defaultValue={['extracted']} className="border-t border-border pt-6">
+          <AccordionItem value="extracted">
+            <AccordionTrigger value="extracted" className="text-base font-semibold">
+              <Database className="h-4 w-4 mr-2 inline" />
+              Extracted Fields
+              {session.extracted_fields.length > 0 && (
+                <span className="text-muted-foreground font-normal ml-2">
+                  ({session.extracted_fields.length})
+                </span>
+              )}
+            </AccordionTrigger>
+            <AccordionContent value="extracted">
+              <div className="space-y-2 pt-2">
+                {session.extracted_fields.length === 0 ? (
+                  <p className="text-muted-foreground">No extracted fields</p>
+                ) : (
+                  session.extracted_fields.map((f) => (
+                    <div
+                      key={f.id}
+                      className="flex justify-between py-2 border-b border-border last:border-0"
+                    >
+                      <span className="font-medium text-sm">{f.field_name}</span>
+                      <span className="text-muted-foreground text-sm">
+                        {f.field_value}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="metadata">
+            <AccordionTrigger value="metadata" className="text-base font-semibold">
+              <Info className="h-4 w-4 mr-2 inline" />
+              Metadata
+            </AccordionTrigger>
+            <AccordionContent value="metadata">
+              <div className="space-y-2 pt-2">
+                {session.metadata?.ip && (
+                  <div className="flex justify-between py-2 border-b border-border">
+                    <span className="font-medium text-sm">IP</span>
+                    <span className="text-muted-foreground text-sm">
+                      {session.metadata.ip}
+                    </span>
+                  </div>
+                )}
+                {session.metadata?.user_agent && (
+                  <div className="flex justify-between py-2 border-b border-border">
+                    <span className="font-medium text-sm">User Agent</span>
+                    <span className="text-muted-foreground text-sm break-all max-w-[70%]">
+                      {session.metadata.user_agent}
+                    </span>
+                  </div>
+                )}
+                {session.metadata?.referrer && (
+                  <div className="flex justify-between py-2 border-b border-border">
+                    <span className="font-medium text-sm">Referrer</span>
+                    <span className="text-muted-foreground text-sm break-all max-w-[70%]">
+                      {session.metadata.referrer}
+                    </span>
+                  </div>
+                )}
+                {!session.metadata?.ip &&
+                  !session.metadata?.user_agent &&
+                  !session.metadata?.referrer && (
+                    <p className="text-muted-foreground">No metadata available</p>
+                  )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="comments">
+            <AccordionTrigger value="comments" className="text-base font-semibold">
+              <MessageCircle className="h-4 w-4 mr-2 inline" />
+              Comments & Tags
+            </AccordionTrigger>
+            <AccordionContent value="comments">
+              <div className="space-y-6 pt-2">
+                <div>
+                  <h4 className="font-medium mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {session.tags.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No tags</p>
                     ) : (
-                      <FileText className="h-4 w-4" />
+                      session.tags.map((t) => (
+                        <Badge key={t} variant="secondary">
+                          {t}
+                        </Badge>
+                      ))
                     )}
-                    Add Note
-                  </Button>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Comments</h4>
+                  {session.comments.map((c) => (
+                    <div
+                      key={c.id}
+                      className="py-2 border-b border-border text-sm"
+                    >
+                      <p>{c.comment_text}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatTimestamp(c.created_at)} by {c.created_by}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="mt-4">
+                    <Textarea
+                      placeholder="Add a note..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                    <Button
+                      size="sm"
+                      className="mt-2 transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim() || isAddingComment}
+                    >
+                      {isAddingComment ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                      Add Note
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Tabs.Content>
-        </Tabs.Root>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <div className="mt-8 pt-6 border-t border-border space-y-4">
           <h4 className="font-medium">Actions</h4>
@@ -529,6 +514,21 @@ export function SessionDetailPane({
         </div>
       </CardContent>
     </Card>
+
+      <ExportModal
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+        sessionIds={session ? [session.id] : []}
+        onExport={handleExport}
+      />
+
+      <ReplayModal
+        open={replayModalOpen}
+        onOpenChange={setReplayModalOpen}
+        sessionId={session?.id ?? ''}
+        sessionLabel={session?.id.slice(0, 8)}
+        onReplay={handleReplayWebhook}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-export type SessionStatus = 'completed' | 'incomplete'
+export type SessionStatus = 'completed' | 'incomplete' | 'in-progress'
 
 export interface SessionListItem {
   id: string

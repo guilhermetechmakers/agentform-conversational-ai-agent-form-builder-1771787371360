@@ -145,6 +145,8 @@ export function useSessions(params: SessionsListParams = {}) {
     params.tag,
     params.date_from,
     params.date_to,
+    params.field_name,
+    params.field_value,
     params.sort,
     params.order,
     params.page,

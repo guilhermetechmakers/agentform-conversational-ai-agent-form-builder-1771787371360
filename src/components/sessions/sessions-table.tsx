@@ -273,7 +273,11 @@ export function SessionsTable({
                     <td className="py-3 px-4">
                       <Badge
                         variant={
-                          session.status === 'completed' ? 'success' : 'secondary'
+                          session.status === 'completed'
+                            ? 'success'
+                            : session.status === 'in-progress'
+                              ? 'warning'
+                              : 'secondary'
                         }
                       >
                         {session.status}

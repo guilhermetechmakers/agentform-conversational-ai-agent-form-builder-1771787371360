@@ -45,6 +45,7 @@ const STATUS_OPTIONS: { value: SessionsFilterState['status']; label: string }[] 
   { value: 'all', label: 'All statuses' },
   { value: 'completed', label: 'Completed' },
   { value: 'incomplete', label: 'Incomplete' },
+  { value: 'in-progress', label: 'In progress' },
 ]
 
 export function SessionsFilters({

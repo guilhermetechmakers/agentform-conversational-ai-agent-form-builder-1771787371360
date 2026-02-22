@@ -7,17 +7,24 @@ interface SessionsBulkActionsProps {
   selectedIds: Set<string>
   onClearSelection: () => void
   onRefetch?: () => void
+  /** When provided, Export opens the export modal instead of bulk API */
+  onExportClick?: () => void
 }
 
 export function SessionsBulkActions({
   selectedIds,
   onClearSelection,
   onRefetch,
+  onExportClick,
 }: SessionsBulkActionsProps) {
   const count = selectedIds.size
   if (count === 0) return null
 
   const handleBulkExport = async () => {
+    if (onExportClick) {
+      onExportClick()
+      return
+    }
     try {
       await sessionsApi.bulkSessionsAction({
         session_ids: Array.from(selectedIds),
