@@ -1,317 +1,456 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Bot,
   Save,
   Send,
-  Settings,
+  Copy,
+  Trash2,
   MessageSquare,
   FileText,
-  GripVertical,
-  Plus,
-  Trash2,
+  Settings,
+  Play,
+  ChevronLeft,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import * as Tabs from '@radix-ui/react-tabs'
+import { Card } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import {
+  AgentMetaPanel,
+  FieldsDesigner,
+  PersonaToneEditor,
+  ContextualDocsUploader,
+  TestConsole,
+  PublishSettings,
+} from '@/components/agent-builder'
+import type { AgentMetaState, PersonaState, PublishSettingsState } from '@/components/agent-builder'
+import type { ContextualDoc } from '@/components/agent-builder'
 import type { AgentField } from '@/types'
+import * as agentsApi from '@/api/agents'
+import type { AgentDetailResponse } from '@/api/agents'
 
-const fieldTypes = [
-  { value: 'text', label: 'Text' },
-  { value: 'email', label: 'Email' },
-  { value: 'phone', label: 'Phone' },
-  { value: 'number', label: 'Number' },
-  { value: 'date', label: 'Date' },
-  { value: 'select', label: 'Select' },
-  { value: 'textarea', label: 'Text area' },
+const SIDEBAR_SECTIONS = [
+  { id: 'meta', label: 'Agent meta', icon: Bot },
+  { id: 'fields', label: 'Fields', icon: MessageSquare },
+  { id: 'persona', label: 'Persona & tone', icon: Bot },
+  { id: 'docs', label: 'Contextual docs', icon: FileText },
+  { id: 'test', label: 'Test console', icon: Play },
+  { id: 'publish', label: 'Publish settings', icon: Settings },
 ] as const
+
+type SectionId = (typeof SIDEBAR_SECTIONS)[number]['id']
+
+function mapApiToMeta(res: AgentDetailResponse): AgentMetaState {
+  return {
+    name: res.name ?? '',
+    description: res.description ?? '',
+    avatar_url: res.avatar_url,
+    appearance: res.appearance,
+    status: res.status ?? 'draft',
+    url_token: res.url_token,
+  }
+}
+
+function mapApiToFields(res: AgentDetailResponse): AgentField[] {
+  const raw = res.fields ?? []
+  return raw
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((f) => ({
+      id: f.id ?? crypto.randomUUID(),
+      type: (f.type as AgentField['type']) ?? 'text',
+      label: f.label ?? '',
+      validations: f.validation_rules,
+      required: f.required,
+      conditionalRules: f.conditional_logic,
+      order: f.order ?? 0,
+    }))
+}
+
+function mapApiToPersona(res: AgentDetailResponse): PersonaState {
+  const p = res.persona
+  return {
+    name: p?.name ?? '',
+    instructions: p?.instructions ?? 'You are a friendly assistant helping collect information. Be conversational and helpful.',
+    tone: (p?.tone as PersonaState['tone']) ?? 'friendly',
+  }
+}
+
+function mapApiToPublishSettings(res: AgentDetailResponse): PublishSettingsState {
+  const s = res.publish_settings
+  return {
+    url_token: s?.url_token ?? res.url_token,
+    expiry: s?.expiry,
+    password: s?.password,
+    webhook_url: s?.webhook_url,
+    webhook_headers: s?.webhook_headers,
+  }
+}
+
+function mapApiToContextualDocs(res: AgentDetailResponse): ContextualDoc[] {
+  const docs = res.contextual_docs ?? []
+  return docs.map((d) => ({
+    id: d.id,
+    type: (d.type as ContextualDoc['type']) ?? 'rich_text',
+    content: d.content,
+  }))
+}
 
 export function AgentBuilderPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const isNew = id === 'new'
-  const [name, setName] = useState(isNew ? '' : 'Lead Capture')
-  const [description, setDescription] = useState('')
-  const [personaInstructions, setPersonaInstructions] = useState(
-    'You are a friendly assistant helping collect information. Be conversational and helpful.'
-  )
-  const [fields, setFields] = useState<AgentField[]>([
-    { id: '1', type: 'text', label: 'Full Name', required: true, order: 0 },
-    { id: '2', type: 'email', label: 'Email', required: true, order: 1 },
-    { id: '3', type: 'phone', label: 'Phone', required: false, order: 2 },
-  ])
-  const [activeTab, setActiveTab] = useState('fields')
+  const isNew = id === 'new' || !id
+
+  const [activeSection, setActiveSection] = useState<SectionId>('meta')
+  const [isLoading, setIsLoading] = useState(!isNew)
   const [isSaving, setIsSaving] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
-  const addField = () => {
-    const newField: AgentField = {
-      id: crypto.randomUUID(),
-      type: 'text',
-      label: 'New field',
-      required: false,
-      order: fields.length,
+  const [meta, setMeta] = useState<AgentMetaState>({
+    name: '',
+    description: '',
+    status: 'draft',
+  })
+  const [fields, setFields] = useState<AgentField[]>([])
+  const [persona, setPersona] = useState<PersonaState>({
+    name: '',
+    instructions: 'You are a friendly assistant helping collect information. Be conversational and helpful.',
+    tone: 'friendly',
+  })
+  const [docs, setDocs] = useState<ContextualDoc[]>([])
+  const [publishSettings, setPublishSettings] = useState<PublishSettingsState>({})
+
+  const loadAgent = useCallback(async (agentId: string) => {
+    setIsLoading(true)
+    try {
+      const res = await agentsApi.fetchAgent(agentId)
+      setMeta(mapApiToMeta(res))
+      setFields(mapApiToFields(res))
+      setPersona(mapApiToPersona(res))
+      setDocs(mapApiToContextualDocs(res))
+      setPublishSettings(mapApiToPublishSettings(res))
+    } catch {
+      toast.error('Failed to load agent')
+      navigate('/dashboard/agents')
+    } finally {
+      setIsLoading(false)
     }
-    setFields([...fields, newField])
-  }
+  }, [navigate])
 
-  const removeField = (fieldId: string) => {
-    setFields(fields.filter((f) => f.id !== fieldId))
-  }
-
-  const updateField = (fieldId: string, updates: Partial<AgentField>) => {
-    setFields(
-      fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f))
-    )
-  }
+  useEffect(() => {
+    if (!isNew && id) loadAgent(id)
+  }, [isNew, id, loadAgent])
 
   const handleSave = async () => {
+    if (!meta.name.trim()) {
+      toast.error('Please enter an agent name')
+      return
+    }
     setIsSaving(true)
     try {
-      await new Promise((r) => setTimeout(r, 500))
-      navigate('/dashboard/agents')
+      if (isNew) {
+        const created = await agentsApi.createAgent({
+          name: meta.name.trim(),
+          avatar_url: meta.avatar_url,
+        })
+        const agentId = created.id
+        await agentsApi.updateAgent(agentId, {
+          name: meta.name.trim(),
+          description: meta.description,
+          avatar_url: meta.avatar_url,
+          appearance: meta.appearance,
+          status: meta.status,
+        })
+        if (fields.length > 0) {
+          await agentsApi.upsertFields(
+            agentId,
+            fields.map((f, i) => ({
+              id: f.id,
+              type: f.type,
+              label: f.label,
+              validation_rules: f.validations,
+              order: i,
+              conditional_logic: f.conditionalRules,
+              required: f.required,
+            }))
+          )
+        }
+        await agentsApi.updatePersona(agentId, {
+          name: persona.name,
+          instructions: persona.instructions,
+          tone: persona.tone,
+        })
+        await agentsApi.updatePublishSettings(agentId, {
+          url_token: publishSettings.url_token,
+          expiry: publishSettings.expiry,
+          password: publishSettings.password,
+          webhook_url: publishSettings.webhook_url,
+          webhook_headers: publishSettings.webhook_headers,
+        })
+        toast.success('Agent created')
+        navigate(`/dashboard/agents/${agentId}`)
+      } else if (id) {
+        await agentsApi.updateAgent(id, {
+          name: meta.name.trim(),
+          description: meta.description,
+          avatar_url: meta.avatar_url,
+          appearance: meta.appearance,
+          status: meta.status,
+        })
+        await agentsApi.upsertFields(
+          id,
+          fields.map((f, i) => ({
+            id: f.id,
+            type: f.type,
+            label: f.label,
+            validation_rules: f.validations,
+            order: i,
+            conditional_logic: f.conditionalRules,
+            required: f.required,
+          }))
+        )
+        await agentsApi.updatePersona(id, {
+          name: persona.name,
+          instructions: persona.instructions,
+          tone: persona.tone,
+        })
+        await agentsApi.updatePublishSettings(id, {
+          url_token: publishSettings.url_token,
+          expiry: publishSettings.expiry,
+          password: publishSettings.password,
+          webhook_url: publishSettings.webhook_url,
+          webhook_headers: publishSettings.webhook_headers,
+        })
+        toast.success('Agent saved')
+      }
+    } catch {
+      toast.error('Failed to save agent')
     } finally {
       setIsSaving(false)
     }
   }
 
   const handlePublish = async () => {
-    setIsSaving(true)
+    setMeta((m) => ({ ...m, status: 'published' }))
+    await handleSave()
+  }
+
+  const handleUnpublish = async () => {
+    setMeta((m) => ({ ...m, status: 'unpublished' }))
+    await handleSave()
+  }
+
+  const handleDuplicate = async () => {
+    if (!id) return
     try {
-      await new Promise((r) => setTimeout(r, 500))
-      navigate('/dashboard/agents')
-    } finally {
-      setIsSaving(false)
+      const dup = await agentsApi.duplicateAgent(id)
+      toast.success('Agent duplicated')
+      navigate(`/dashboard/agents/${dup.id}`)
+    } catch {
+      toast.error('Failed to duplicate agent')
     }
+  }
+
+  const handleDelete = async () => {
+    if (!id) return
+    try {
+      await agentsApi.deleteAgent(id)
+      toast.success('Agent deleted')
+      navigate('/dashboard/agents')
+    } catch {
+      toast.error('Failed to delete agent')
+    } finally {
+      setDeleteDialogOpen(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1 space-y-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+            ))}
+          </div>
+          <div className="lg:col-span-3 space-y-6">
+            <div className="h-64 rounded-xl bg-muted animate-pulse" />
+            <div className="h-48 rounded-xl bg-muted animate-pulse" />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {isNew ? 'Create Agent' : 'Edit Agent'}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Define fields, persona, and publish settings
-          </p>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/dashboard/agents')}
+            aria-label="Back to agents"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {isNew ? 'Create Agent' : 'Edit Agent'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Define fields, persona, and publish settings
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          >
             <Save className="h-4 w-4" />
             Save draft
           </Button>
-          <Button onClick={handlePublish} disabled={isSaving}>
-            <Send className="h-4 w-4" />
-            Publish
-          </Button>
+          {meta.status === 'published' ? (
+            <Button
+              variant="outline"
+              onClick={handleUnpublish}
+              disabled={isSaving}
+            >
+              Unpublish
+            </Button>
+          ) : (
+            <Button
+              onClick={handlePublish}
+              disabled={isSaving}
+              className="transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Send className="h-4 w-4" />
+              Publish
+            </Button>
+          )}
+          {!isNew && (
+            <>
+              <Button variant="outline" onClick={handleDuplicate} disabled={isSaving}>
+                <Copy className="h-4 w-4" />
+                Duplicate
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={isSaving}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main builder */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Agent meta
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Lead Capture"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Brief description of this agent"
-                  />
-                </div>
-            </CardContent>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar navigation */}
+        <aside className="lg:col-span-1">
+          <Card className="sticky top-24 bg-card">
+            <ScrollArea className="h-[calc(100vh-8rem)]">
+              <nav className="p-3 space-y-1">
+                {SIDEBAR_SECTIONS.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setActiveSection(id)}
+                    className={cn(
+                      'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                      activeSection === id
+                        ? 'bg-primary/20 text-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    {label}
+                  </button>
+                ))}
+              </nav>
+            </ScrollArea>
           </Card>
+        </aside>
 
-          <Card>
-            <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
-              <CardHeader>
-                <Tabs.List className="flex gap-2 border-b border-border pb-2">
-                  <Tabs.Trigger
-                    value="fields"
-                    className={cn(
-                      'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                      activeTab === 'fields'
-                        ? 'bg-primary/20 text-foreground'
-                        : 'text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2 inline" />
-                    Fields
-                  </Tabs.Trigger>
-                  <Tabs.Trigger
-                    value="persona"
-                    className={cn(
-                      'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                      activeTab === 'persona'
-                        ? 'bg-primary/20 text-foreground'
-                        : 'text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <Bot className="h-4 w-4 mr-2 inline" />
-                    Persona
-                  </Tabs.Trigger>
-                  <Tabs.Trigger
-                    value="docs"
-                    className={cn(
-                      'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                      activeTab === 'docs'
-                        ? 'bg-primary/20 text-foreground'
-                        : 'text-muted-foreground hover:bg-muted'
-                    )}
-                  >
-                    <FileText className="h-4 w-4 mr-2 inline" />
-                    Docs
-                  </Tabs.Trigger>
-                </Tabs.List>
-              </CardHeader>
-              <CardContent>
-                <Tabs.Content value="fields" className="mt-0">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm text-muted-foreground">
-                        Drag to reorder. Define the structured data this agent collects.
-                      </p>
-                      <Button variant="outline" size="sm" onClick={addField}>
-                        <Plus className="h-4 w-4" />
-                        Add field
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {fields.map((field) => (
-                        <div
-                          key={field.id}
-                          className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card"
-                        >
-                          <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 cursor-grab" />
-                          <Input
-                            value={field.label}
-                            onChange={(e) =>
-                              updateField(field.id, { label: e.target.value })
-                            }
-                            className="flex-1"
-                            placeholder="Field label"
-                          />
-                          <select
-                            value={field.type}
-                            onChange={(e) =>
-                              updateField(field.id, {
-                                type: e.target.value as AgentField['type'],
-                              })
-                            }
-                            className="h-10 rounded-lg border border-input bg-card px-3 text-sm"
-                          >
-                            {fieldTypes.map((t) => (
-                              <option key={t.value} value={t.value}>
-                                {t.label}
-                              </option>
-                            ))}
-                          </select>
-                          <label className="flex items-center gap-1 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={field.required ?? false}
-                              onChange={(e) =>
-                                updateField(field.id, {
-                                  required: e.target.checked,
-                                })
-                              }
-                            />
-                            Required
-                          </label>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeField(field.id)}
-                            aria-label="Remove field"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Tabs.Content>
-                <Tabs.Content value="persona" className="mt-0">
-                  <div className="space-y-4">
-                    <Label>Persona instructions</Label>
-                    <textarea
-                      value={personaInstructions}
-                      onChange={(e) => setPersonaInstructions(e.target.value)}
-                      className="w-full min-h-[120px] rounded-lg border border-input bg-card px-3 py-2 text-sm"
-                      placeholder="Describe how the agent should behave..."
-                    />
-                  </div>
-                </Tabs.Content>
-                <Tabs.Content value="docs" className="mt-0">
-                  <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-border rounded-lg">
-                    <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-sm text-muted-foreground">
-                      Upload FAQs, product info, or other context for the agent
-                    </p>
-                    <Button variant="outline" className="mt-4" disabled>
-                      Upload documents (coming soon)
-                    </Button>
-                  </div>
-                </Tabs.Content>
-              </CardContent>
-            </Tabs.Root>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Publish settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Public URL</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={isNew ? '' : 'agentform.app/a/abc123'}
-                      readOnly
-                      className="font-mono text-sm"
-                    />
-                    <Button variant="outline" size="sm" disabled>
-                      Copy
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Optional password</Label>
-                  <Input type="password" placeholder="Leave empty for public" />
-                </div>
-                <Button variant="outline" className="w-full" disabled>
-                  Test in sandbox (coming soon)
-                </Button>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Main content */}
+        <main className="lg:col-span-3 space-y-6">
+          {activeSection === 'meta' && (
+            <AgentMetaPanel
+              meta={meta}
+              onChange={(u) => setMeta((m) => ({ ...m, ...u }))}
+              isNew={isNew}
+            />
+          )}
+          {activeSection === 'fields' && (
+            <FieldsDesigner fields={fields} onFieldsChange={setFields} />
+          )}
+          {activeSection === 'persona' && (
+            <PersonaToneEditor
+              persona={persona}
+              onChange={(u) => setPersona((p) => ({ ...p, ...u }))}
+            />
+          )}
+          {activeSection === 'docs' && (
+            <ContextualDocsUploader docs={docs} onChange={setDocs} />
+          )}
+          {activeSection === 'test' && (
+            <TestConsole
+              agentName={meta.name || persona.name}
+              avatarUrl={meta.avatar_url}
+              fields={fields}
+              personaInstructions={persona.instructions}
+            />
+          )}
+          {activeSection === 'publish' && (
+            <PublishSettings
+              settings={publishSettings}
+              onChange={(u) => setPublishSettings((s) => ({ ...s, ...u }))}
+              agentId={id}
+              isNew={isNew}
+            />
+          )}
+        </main>
       </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent showClose={true}>
+          <DialogHeader>
+            <DialogTitle>Delete agent?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. All sessions and data for this agent
+              will be permanently removed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isSaving}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
