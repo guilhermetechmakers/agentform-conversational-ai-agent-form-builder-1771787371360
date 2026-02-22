@@ -113,6 +113,23 @@ export async function updateUser(
   }
 }
 
+export async function getUserById(id: string): Promise<AdminUser | null> {
+  try {
+    const res = await apiGet<AdminUser>(`${ADMIN_BASE}/users/${id}`)
+    return res
+  } catch (err) {
+    const apiErr = err as ApiError & { status?: number }
+    if (apiErr?.status === 404 || apiErr?.message?.includes('fetch')) {
+      return null
+    }
+    throw err
+  }
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await apiDelete(`${ADMIN_BASE}/users/${id}`)
+}
+
 export async function fetchAgents(params?: {
   search?: string
   status?: string

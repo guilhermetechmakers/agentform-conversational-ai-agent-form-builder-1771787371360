@@ -1,10 +1,21 @@
 export interface UserProfile {
   id: string
   name: string
+  /** First name (preferred when available) */
+  first_name?: string
+  /** Last name (preferred when available) */
+  last_name?: string
   email: string
   avatar_url?: string
   timezone: string
   language: string
+}
+
+export interface NotificationPreferences {
+  user_id: string
+  email_notifications: boolean
+  sms_notifications: boolean
+  push_notifications: boolean
 }
 
 export type TeamRole = 'Owner' | 'Admin' | 'Member'

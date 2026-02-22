@@ -9,6 +9,7 @@ import {
   UserCheck,
   UserX,
   Trash2,
+  Eye,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,7 @@ interface UserTableProps {
   onSelectionChange: (ids: Set<string>) => void
   onUpdateUser?: (id: string, updates: { status?: UserStatus; role?: UserRole }) => void
   onDeleteUser?: (id: string) => void
+  onViewUser?: (user: AdminUser) => void
   search?: string
   onSearchChange?: (value: string) => void
   roleFilter?: string
@@ -80,6 +82,7 @@ export function UserTable({
   onSelectionChange,
   onUpdateUser,
   onDeleteUser,
+  onViewUser,
   search = '',
   onSearchChange,
   roleFilter = '',
@@ -318,6 +321,12 @@ export function UserTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {onViewUser && (
+                            <DropdownMenuItem onClick={() => onViewUser(user)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View profile
+                            </DropdownMenuItem>
+                          )}
                           {user.status === 'active' ? (
                             <DropdownMenuItem
                               onClick={() =>

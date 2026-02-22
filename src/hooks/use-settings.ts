@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import * as settingsApi from '@/api/settings'
 import type {
   UserProfile,
+  NotificationPreferences,
   TeamMember,
   BillingInfo,
   ApiKey,
@@ -28,9 +29,18 @@ function isNetworkError(err: unknown): boolean {
 const MOCK_PROFILE: UserProfile = {
   id: '1',
   name: 'Demo User',
+  first_name: 'Demo',
+  last_name: 'User',
   email: 'user@example.com',
   timezone: 'America/New_York',
   language: 'en',
+}
+
+const MOCK_PREFERENCES: NotificationPreferences = {
+  user_id: '1',
+  email_notifications: true,
+  sms_notifications: false,
+  push_notifications: false,
 }
 
 const MOCK_TEAM: TeamMember[] = [
@@ -148,6 +158,108 @@ export function useUpdateProfile() {
   )
 
   return { update, isLoading }
+}
+
+export function useNotificationPreferences() {
+  const [data, setData] = useState<NotificationPreferences | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchPrefs = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await settingsApi.fetchNotificationPreferences()
+      setData(res)
+    } catch (err) {
+      if (isNetworkError(err)) {
+        setData(MOCK_PREFERENCES)
+      } else {
+        const e = err as ApiError
+        setError(e?.message ?? 'Failed to load preferences')
+        toast.error(e?.message ?? 'Failed to load preferences')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchPrefs()
+  }, [fetchPrefs])
+
+  const update = useCallback(
+    async (payload: Partial<NotificationPreferences>) => {
+      try {
+        const res = await settingsApi.updateNotificationPreferences(payload)
+        setData(res)
+        return res
+      } catch (err) {
+        if (isNetworkError(err)) {
+          setData({ ...MOCK_PREFERENCES, ...payload })
+          return { ...MOCK_PREFERENCES, ...payload } as NotificationPreferences
+        }
+        throw err
+      }
+    },
+    []
+  )
+
+  return { data, isLoading, error, refetch: fetchPrefs, update }
+}
+
+export function useAvatarUpload() {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const upload = useCallback(async (file: File) => {
+    setIsLoading(true)
+    try {
+      const res = await settingsApi.uploadAvatar(file)
+      toast.success('Avatar updated successfully')
+      return res
+    } catch (err) {
+      const e = err as ApiError
+      toast.error(e?.message ?? 'Failed to upload avatar')
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const remove = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const res = await settingsApi.removeAvatar()
+      toast.success('Avatar removed')
+      return res
+    } catch (err) {
+      const e = err as ApiError
+      toast.error(e?.message ?? 'Failed to remove avatar')
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  return { upload, remove, isLoading }
+}
+
+export function useDeleteAccount() {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const deleteAccount = useCallback(async (password: string) => {
+    setIsLoading(true)
+    try {
+      await settingsApi.deleteAccount(password)
+    } catch (err) {
+      const e = err as ApiError
+      throw new Error(e?.message ?? 'Failed to delete account')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  return { deleteAccount, isLoading }
 }
 
 export function useTeamMembers() {

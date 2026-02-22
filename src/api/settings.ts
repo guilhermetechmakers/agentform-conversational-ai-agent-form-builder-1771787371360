@@ -1,6 +1,7 @@
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api'
+import { apiGet, apiPost, apiPut, apiDelete, apiPostFormData } from '@/lib/api'
 import type {
   UserProfile,
+  NotificationPreferences,
   TeamMember,
   BillingInfo,
   ApiKey,
@@ -14,9 +15,33 @@ export async function fetchUserProfile(): Promise<UserProfile> {
 }
 
 export async function updateUserProfile(
-  data: Partial<Pick<UserProfile, 'name' | 'email' | 'timezone' | 'language'>>
+  data: Partial<Pick<UserProfile, 'name' | 'first_name' | 'last_name' | 'email' | 'timezone' | 'language'>>
 ): Promise<UserProfile> {
   return apiPut<UserProfile>('/user/profile', data)
+}
+
+export async function uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+  const formData = new FormData()
+  formData.append('avatar', file)
+  return apiPostFormData<{ avatar_url: string }>('/user/avatar', formData)
+}
+
+export async function removeAvatar(): Promise<void> {
+  await apiDelete('/user/avatar')
+}
+
+export async function deleteAccount(password: string): Promise<void> {
+  return apiPost<void>('/user/delete-account', { password })
+}
+
+export async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
+  return apiGet<NotificationPreferences>('/user/preferences')
+}
+
+export async function updateNotificationPreferences(
+  data: Partial<Pick<NotificationPreferences, 'email_notifications' | 'sms_notifications' | 'push_notifications'>>
+): Promise<NotificationPreferences> {
+  return apiPut<NotificationPreferences>('/user/preferences', data)
 }
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
