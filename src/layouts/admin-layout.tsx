@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { AdminSearchBar } from '@/components/search/admin-search-bar'
 
 const SIDEBAR_KEY = 'agentform-admin-sidebar-collapsed'
 
@@ -192,9 +193,12 @@ export function AdminLayout() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex flex-1 items-center justify-between">
-            <h1 className="text-lg font-semibold text-[#191A1D]">Admin Dashboard</h1>
-            <Button variant="outline" size="sm" asChild>
+          <div className="flex flex-1 items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <h1 className="text-lg font-semibold text-[#191A1D] shrink-0">Admin Dashboard</h1>
+              <AdminSearchBar className="max-w-sm flex-1" />
+            </div>
+            <Button variant="outline" size="sm" asChild className="shrink-0">
               <Link to="/dashboard">Back to App</Link>
             </Button>
           </div>

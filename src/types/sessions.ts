@@ -9,6 +9,8 @@ export interface SessionListItem {
   created_at: string
   extracted_fields_summary: Record<string, string>
   tags?: string[]
+  /** Brief transcript snippet for list/card display */
+  transcript_snippet?: string
 }
 
 export interface SessionsListResponse {

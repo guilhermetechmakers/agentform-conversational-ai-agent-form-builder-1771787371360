@@ -1,15 +1,17 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Download, LayoutGrid, List, Webhook as WebhookIcon, MessageSquare } from 'lucide-react'
+import { Download, LayoutGrid, List, Webhook as WebhookIcon, MessageSquare, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
-  SessionsFilters,
   SessionsTable,
   SessionsCardGrid,
   SessionsBulkActions,
   ExportModal,
   ReplayModal,
+  FilterPanelSidebar,
+  StatusFilterChips,
   DEFAULT_SESSIONS_FILTERS,
 } from '@/components/sessions'
 import { WebhookLogsTable } from '@/components/webhooks'
@@ -20,6 +22,7 @@ import type {
 } from '@/components/sessions'
 import { useAgents } from '@/hooks/use-agents'
 import { useSessions } from '@/hooks/use-sessions'
+import { useSearchOptional } from '@/contexts/search-context'
 import { debounce } from '@/lib/utils'
 import * as sessionsApi from '@/api/sessions'
 import type {
@@ -33,10 +36,13 @@ const MOCK_FIELDS = ['email', 'name', 'rating', 'feedback']
 
 export function SessionsListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const searchContext = useSearchOptional()
   const urlSearch = searchParams.get('search') ?? ''
+  const urlStatus = (searchParams.get('status') as SessionStatus | null) ?? undefined
   const [filters, setFilters] = useState<SessionsFilterState>({
     ...DEFAULT_SESSIONS_FILTERS,
     search: urlSearch,
+    status: urlStatus && ['completed', 'incomplete', 'in-progress'].includes(urlStatus) ? urlStatus : 'all',
   })
   const [debouncedSearch, setDebouncedSearch] = useState(urlSearch)
   const [page, setPage] = useState(1)
@@ -52,8 +58,33 @@ export function SessionsListPage() {
 
   useEffect(() => {
     setDebouncedSearch(urlSearch)
-    setFilters((prev) => ({ ...prev, search: urlSearch }))
-  }, [urlSearch])
+    setFilters((prev) => ({
+      ...prev,
+      search: urlSearch,
+      status:
+        urlStatus && ['completed', 'incomplete', 'in-progress'].includes(urlStatus)
+          ? urlStatus
+          : 'all',
+    }))
+  }, [urlSearch, urlStatus])
+
+  useEffect(() => {
+    if (!searchContext) return
+    const pending = searchContext.pendingSessionsSearch
+    if (pending != null && pending.trim()) {
+      setFilters((prev) => ({ ...prev, search: pending }))
+      setDebouncedSearch(pending)
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.set('search', pending)
+          return next
+        },
+        { replace: true }
+      )
+      searchContext.setPendingSessionsSearch(null)
+    }
+  }, [searchContext?.pendingSessionsSearch, searchContext])
 
   const debouncedSetSearch = useMemo(
     () =>
@@ -258,79 +289,153 @@ export function SessionsListPage() {
       {activeTab === 'webhook-logs' ? (
         <WebhookLogsTable />
       ) : (
-        <>
-      <SessionsFilters
-        filters={filters}
-        onFiltersChange={(f: SessionsFilterState) => {
-          setFilters(f)
-          setPage(1)
-        }}
-        onSearchChange={debouncedSetSearch}
-        agents={agents.map((a) => ({ id: a.id, name: a.name }))}
-        availableTags={MOCK_TAGS}
-        availableFields={MOCK_FIELDS}
-      />
+        <div className="flex gap-6">
+          <FilterPanelSidebar
+            filters={filters}
+            onFiltersChange={(f: SessionsFilterState) => {
+              setFilters(f)
+              setSearchParams(
+                (prev) => {
+                  const next = new URLSearchParams(prev)
+                  if (f.search) next.set('search', f.search)
+                  else next.delete('search')
+                  if (f.status && f.status !== 'all') next.set('status', f.status)
+                  else next.delete('status')
+                  return next
+                },
+                { replace: true }
+              )
+              if (f.search === '') setDebouncedSearch('')
+              setPage(1)
+            }}
+            onSearchClear={() => {
+              setDebouncedSearch('')
+              setSearchParams(
+                (prev) => {
+                  const next = new URLSearchParams(prev)
+                  next.delete('search')
+                  next.delete('status')
+                  return next
+                },
+                { replace: true }
+              )
+            }}
+            agents={agents.map((a) => ({ id: a.id, name: a.name }))}
+            availableTags={MOCK_TAGS}
+            availableFields={MOCK_FIELDS}
+          />
+          <div className="flex-1 min-w-0 space-y-4">
+            {/* Search bar - full width at top */}
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                placeholder="Search sessions or agents..."
+                className="pl-9 pr-9"
+                value={filters.search}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setFilters((prev) => ({ ...prev, search: v }))
+                  debouncedSetSearch(v)
+                }}
+                aria-label="Search sessions or agents"
+              />
+              {filters.search && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                  onClick={() => {
+                    setFilters((prev) => ({ ...prev, search: '' }))
+                    debouncedSetSearch('')
+                  }}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
 
-      <SessionsBulkActions
-        selectedIds={selectedIds}
-        onClearSelection={() => setSelectedIds(new Set())}
-        onRefetch={refetch}
-        onExportClick={openExportModal}
-      />
+            <StatusFilterChips
+              value={filters.status}
+              onChange={(v) => {
+                setFilters((prev) => ({ ...prev, status: v }))
+                setSearchParams(
+                  (prev) => {
+                    const next = new URLSearchParams(prev)
+                    if (v && v !== 'all') next.set('status', v)
+                    else next.delete('status')
+                    return next
+                  },
+                  { replace: true }
+                )
+                setPage(1)
+              }}
+            />
+            <SessionsBulkActions
+              selectedIds={selectedIds}
+              onClearSelection={() => setSelectedIds(new Set())}
+              onRefetch={refetch}
+              onExportClick={openExportModal}
+            />
 
-      {viewMode === 'cards' ? (
-        <SessionsCardGrid
-          sessions={sessions}
-          isLoading={isLoading}
-          page={page}
-          pageSize={PAGE_SIZE}
-          total={total}
-          onPageChange={setPage}
-          selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-          onExport={openExportModalForSession}
-          onReplayWebhook={openReplayModal}
-          hasActiveFilters={hasActiveFilters}
-        />
-      ) : (
-        <SessionsTable
-          sessions={sessions}
-          isLoading={isLoading}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          onSort={handleSort}
-          page={page}
-          pageSize={PAGE_SIZE}
-          total={total}
-          onPageChange={setPage}
-          selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-          onExport={openExportModalForSession}
-          onReplayWebhook={openReplayModal}
-          hasActiveFilters={hasActiveFilters}
-        />
-      )}
+            {viewMode === 'cards' ? (
+              <SessionsCardGrid
+                sessions={sessions}
+                isLoading={isLoading}
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={total}
+                onPageChange={setPage}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                onExport={openExportModalForSession}
+                onReplayWebhook={openReplayModal}
+                hasActiveFilters={hasActiveFilters}
+              />
+            ) : (
+              <SessionsTable
+                sessions={sessions}
+                isLoading={isLoading}
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={total}
+                onPageChange={setPage}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                onExport={openExportModalForSession}
+                onReplayWebhook={openReplayModal}
+                hasActiveFilters={hasActiveFilters}
+              />
+            )}
 
-      <ExportModal
-        open={exportModalOpen}
-        onOpenChange={setExportModalOpen}
-        sessionIds={exportSessionIds}
-        onExport={handleExport}
-      />
+            <ExportModal
+              open={exportModalOpen}
+              onOpenChange={setExportModalOpen}
+              sessionIds={exportSessionIds}
+              onExport={handleExport}
+            />
 
-      {replaySessionId && (
-        <ReplayModal
-          open={replayModalOpen}
-          onOpenChange={(open) => {
-            setReplayModalOpen(open)
-            if (!open) setReplaySessionId(null)
-          }}
-          sessionId={replaySessionId}
-          sessionLabel={sessions.find((s) => s.id === replaySessionId)?.id.slice(0, 8)}
-          onReplay={handleReplayWebhook}
-        />
-      )}
-        </>
+            {replaySessionId && (
+              <ReplayModal
+                open={replayModalOpen}
+                onOpenChange={(open) => {
+                  setReplayModalOpen(open)
+                  if (!open) setReplaySessionId(null)
+                }}
+                sessionId={replaySessionId}
+                sessionLabel={sessions.find((s) => s.id === replaySessionId)?.id.slice(0, 8)}
+                onReplay={handleReplayWebhook}
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

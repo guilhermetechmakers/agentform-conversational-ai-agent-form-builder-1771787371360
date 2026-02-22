@@ -14,7 +14,15 @@ function formatDate(iso: string): string {
   })
 }
 
-function fieldsSummary(fields: Record<string, string>): string {
+function transcriptOrFieldsSummary(
+  session: SessionListItem
+): string {
+  if (session.transcript_snippet) {
+    return session.transcript_snippet.length > 80
+      ? `${session.transcript_snippet.slice(0, 80)}…`
+      : session.transcript_snippet
+  }
+  const fields = session.extracted_fields_summary
   const entries = Object.entries(fields)
   if (entries.length === 0) return '—'
   return entries
@@ -52,7 +60,9 @@ export function SessionCard({
 }: SessionCardProps) {
   return (
     <Card
-      className="group transition-all duration-200 hover:shadow-card-hover border-border overflow-hidden"
+      className="group transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5 border-border overflow-hidden"
+      role="article"
+      aria-labelledby={`session-${session.id}-title`}
     >
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-start justify-between gap-2">
@@ -65,10 +75,11 @@ export function SessionCard({
             />
             <div className="min-w-0 flex-1">
               <Link
+                id={`session-${session.id}-title`}
                 to={`/dashboard/sessions/${session.id}`}
                 className="font-medium text-primary hover:underline block truncate"
               >
-                {session.id.slice(0, 8)}…
+                Session {session.id.slice(0, 8)}…
               </Link>
               <p className="text-sm text-muted-foreground mt-0.5 truncate">
                 {session.agent_name}
@@ -99,7 +110,7 @@ export function SessionCard({
           </p>
         )}
         <p className="text-sm text-muted-foreground line-clamp-2">
-          {fieldsSummary(session.extracted_fields_summary)}
+          {transcriptOrFieldsSummary(session)}
         </p>
         <Link
           to={`/dashboard/sessions/${session.id}`}

@@ -298,13 +298,17 @@ export function SessionDetailPane({
         </div>
       </CardHeader>
       <CardContent>
-        {/* Transcript - chat-like display */}
+        {/* Transcript - scrollable chat-like display */}
         <div className="mb-6">
           <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Transcript
           </h3>
-          <div className="space-y-4">
+          <div
+            className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scroll-smooth"
+            role="region"
+            aria-label="Conversation transcript"
+          >
             {session.transcript.length === 0 ? (
               <p className="text-muted-foreground">No transcript available</p>
             ) : (
@@ -346,21 +350,31 @@ export function SessionDetailPane({
               )}
             </AccordionTrigger>
             <AccordionContent value="extracted">
-              <div className="space-y-2 pt-2">
+              <div className="pt-2 overflow-x-auto">
                 {session.extracted_fields.length === 0 ? (
                   <p className="text-muted-foreground">No extracted fields</p>
                 ) : (
-                  session.extracted_fields.map((f) => (
-                    <div
-                      key={f.id}
-                      className="flex justify-between py-2 border-b border-border last:border-0"
-                    >
-                      <span className="font-medium text-sm">{f.field_name}</span>
-                      <span className="text-muted-foreground text-sm">
-                        {f.field_value}
-                      </span>
-                    </div>
-                  ))
+                  <table className="w-full min-w-[300px] text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 font-medium">Field</th>
+                        <th className="text-left py-2 font-medium">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {session.extracted_fields.map((f) => (
+                        <tr
+                          key={f.id}
+                          className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+                        >
+                          <td className="py-2 font-medium">{f.field_name}</td>
+                          <td className="py-2 text-muted-foreground">
+                            {f.field_value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
             </AccordionContent>

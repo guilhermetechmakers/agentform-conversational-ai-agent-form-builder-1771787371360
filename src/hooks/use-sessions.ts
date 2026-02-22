@@ -19,6 +19,7 @@ const MOCK_SESSIONS: SessionListItem[] = [
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     extracted_fields_summary: { email: 'user@example.com', name: 'John Doe' },
     tags: ['lead'],
+    transcript_snippet: 'Hi! I\'d love to capture your details. What\'s your email? — user@example.com — Thanks! And your name? — John Doe',
   },
   {
     id: 'sess-002',
@@ -29,6 +30,7 @@ const MOCK_SESSIONS: SessionListItem[] = [
     created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     extracted_fields_summary: { email: 'partial@test.com' },
     tags: [],
+    transcript_snippet: 'What\'s your email? — partial@test.com — Thanks! Please complete the form...',
   },
   {
     id: 'sess-003',
@@ -43,6 +45,7 @@ const MOCK_SESSIONS: SessionListItem[] = [
       email: 'feedback@company.com',
     },
     tags: ['feedback'],
+    transcript_snippet: 'How would you rate our product? — 5 — Any feedback? — Great product!',
   },
 ]
 

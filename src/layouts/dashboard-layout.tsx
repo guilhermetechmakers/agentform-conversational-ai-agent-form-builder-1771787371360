@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
-import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Bot,
@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Search,
   Menu,
   LogOut,
   User,
@@ -19,7 +18,6 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -31,7 +29,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useAuth, useSidebarState } from '@/contexts/auth-context'
-import { debounce } from '@/lib/utils'
+import { DashboardSearchBar } from '@/components/search/dashboard-search-bar'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
@@ -46,39 +44,9 @@ const navItems = [
 export function DashboardLayout() {
   const { collapsed, toggle } = useSidebarState()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-
-  const isAgentsPage = location.pathname === '/dashboard/agents'
-  const urlSearch = isAgentsPage ? (searchParams.get('search') ?? '') : ''
-  const [searchInput, setSearchInput] = useState(urlSearch)
-  useEffect(() => {
-    if (isAgentsPage) setSearchInput(urlSearch)
-  }, [isAgentsPage, urlSearch])
-  const setSearchQuery = useCallback(
-    (value: string) => {
-      if (isAgentsPage) {
-        const next = new URLSearchParams(searchParams)
-        if (value) next.set('search', value)
-        else next.delete('search')
-        setSearchParams(next, { replace: true })
-      }
-    },
-    [isAgentsPage, searchParams, setSearchParams]
-  )
-  const debouncedSetSearch = useMemo(
-    () => debounce((v: string) => setSearchQuery(v), 300),
-    [setSearchQuery]
-  )
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearchInput(value)
-      debouncedSetSearch(value)
-    },
-    [debouncedSetSearch]
-  )
 
   const handleLogout = async () => {
     await logout()
@@ -221,15 +189,7 @@ export function DashboardLayout() {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex flex-1 items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search agents, sessions..."
-                className="pl-9"
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
-            </div>
+            <DashboardSearchBar />
             <Button asChild>
               <Link to="/dashboard/agents/new">
                 <Plus className="h-4 w-4" />

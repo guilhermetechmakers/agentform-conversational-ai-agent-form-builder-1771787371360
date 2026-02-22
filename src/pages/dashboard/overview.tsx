@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Bot, MessageSquare, TrendingUp, Plus } from 'lucide-react'
+import { Bot, MessageSquare, TrendingUp, Plus, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -45,7 +45,7 @@ export function DashboardOverviewPage() {
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="overflow-hidden">
+            <Card key={stat.label} className="overflow-hidden transition-all duration-200 hover:shadow-card-hover">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.label}
@@ -65,6 +65,39 @@ export function DashboardOverviewPage() {
             </Card>
           )
         })}
+      </div>
+
+      {/* Session status quick filters - link to sessions with pre-applied filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-muted-foreground">Sessions by status:</span>
+        <Link
+          to="/dashboard/sessions?status=completed"
+          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <CheckCircle className="h-4 w-4" />
+          Completed
+        </Link>
+        <Link
+          to="/dashboard/sessions?status=in-progress"
+          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium bg-primary/20 text-foreground hover:bg-primary/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Clock className="h-4 w-4" />
+          In progress
+        </Link>
+        <Link
+          to="/dashboard/sessions?status=incomplete"
+          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <AlertCircle className="h-4 w-4" />
+          Incomplete
+        </Link>
+        <Link
+          to="/dashboard/sessions"
+          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border border-border hover:bg-muted/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <MessageSquare className="h-4 w-4" />
+          All sessions
+        </Link>
       </div>
 
       {/* Agents list */}

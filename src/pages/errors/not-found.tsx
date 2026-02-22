@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { debounce } from '@/lib/utils'
 import { log404Error } from '@/api/errors'
-import { searchSite } from '@/api/search'
-import type { SearchResult } from '@/api/search'
+import { searchSite, type SearchResult } from '@/api/search'
 import { toast } from 'sonner'
 
 function ErrorMessage() {

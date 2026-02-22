@@ -1,4 +1,5 @@
 import { Search, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,6 +40,10 @@ interface SessionsFiltersProps {
   agents?: Array<{ id: string; name: string }>
   availableTags?: string[]
   availableFields?: string[]
+  /** Use vertical layout for sidebar (full-width stacked) */
+  layout?: 'horizontal' | 'vertical'
+  /** Hide search input (when search is in main content) */
+  hideSearch?: boolean
 }
 
 const STATUS_OPTIONS: { value: SessionsFilterState['status']; label: string }[] = [
@@ -55,7 +60,10 @@ export function SessionsFilters({
   agents = [],
   availableTags = [],
   availableFields = [],
+  layout = 'horizontal',
+  hideSearch = false,
 }: SessionsFiltersProps) {
+  const isVertical = layout === 'vertical'
   const hasActiveFilters =
     filters.search ||
     filters.agent_id ||
@@ -81,9 +89,13 @@ export function SessionsFilters({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+    <div className={cn('flex flex-col gap-4', isVertical && 'w-full')}>
+      <div className={cn(
+        'flex flex-col gap-4',
+        isVertical ? 'w-full' : 'sm:flex-row sm:items-center sm:flex-wrap'
+      )}>
+        {!hideSearch && (
+        <div className={cn('relative', isVertical ? 'w-full' : 'flex-1 min-w-[200px]')}>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search sessions..."
@@ -111,14 +123,15 @@ export function SessionsFilters({
             </Button>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        )}
+        <div className={cn('flex gap-2', isVertical ? 'flex-col' : 'flex-wrap')}>
           <Select
             value={filters.agent_id || '__all__'}
             onValueChange={(v) =>
               onFiltersChange({ ...filters, agent_id: v === '__all__' ? '' : v })
             }
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className={isVertical ? 'w-full' : 'w-[160px]'}>
               <SelectValue placeholder="Agent" />
             </SelectTrigger>
             <SelectContent>
@@ -136,7 +149,7 @@ export function SessionsFilters({
               onFiltersChange({ ...filters, status: v as SessionsFilterState['status'] })
             }
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className={isVertical ? 'w-full' : 'w-[140px]'}>
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -153,7 +166,7 @@ export function SessionsFilters({
               onFiltersChange({ ...filters, tag: v === '__all__' ? '' : v })
             }
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className={isVertical ? 'w-full' : 'w-[140px]'}>
               <SelectValue placeholder="Tag" />
             </SelectTrigger>
             <SelectContent>
@@ -165,10 +178,10 @@ export function SessionsFilters({
               ))}
             </SelectContent>
           </Select>
-          <div className="flex gap-2 items-center">
+          <div className={cn('flex gap-2 items-center', isVertical && 'flex-col items-stretch')}>
             <Input
               type="date"
-              className="w-[140px]"
+              className={isVertical ? 'w-full' : 'w-[140px]'}
               value={filters.date_from}
               onChange={(e) =>
                 onFiltersChange({ ...filters, date_from: e.target.value })
@@ -178,7 +191,7 @@ export function SessionsFilters({
             <span className="text-muted-foreground text-sm">to</span>
             <Input
               type="date"
-              className="w-[140px]"
+              className={isVertical ? 'w-full' : 'w-[140px]'}
               value={filters.date_to}
               onChange={(e) =>
                 onFiltersChange({ ...filters, date_to: e.target.value })
@@ -198,7 +211,7 @@ export function SessionsFilters({
                   })
                 }
               >
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className={isVertical ? 'w-full' : 'w-[140px]'}>
                   <SelectValue placeholder="Field" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,7 +226,7 @@ export function SessionsFilters({
               {filters.field_name && (
                 <Input
                   placeholder="Field value"
-                  className="w-[140px]"
+                  className={isVertical ? 'w-full' : 'w-[140px]'}
                   value={filters.field_value}
                   onChange={(e) =>
                     onFiltersChange({ ...filters, field_value: e.target.value })

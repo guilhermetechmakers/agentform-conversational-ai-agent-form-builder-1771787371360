@@ -151,7 +151,7 @@ export function SessionsCardGrid({
       </div>
 
       {totalPages > 1 && onPageChange && (
-        <div className="flex items-center justify-between border-t border-border pt-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 border-t border-border pt-6">
           <p className="text-sm text-muted-foreground">
             Showing {(page - 1) * pageSize + 1}–
             {Math.min(page * pageSize, total)} of {total}
