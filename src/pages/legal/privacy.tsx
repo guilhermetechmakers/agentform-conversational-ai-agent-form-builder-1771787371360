@@ -1,6 +1,4 @@
-import { Link } from 'react-router-dom'
-import { Bot } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { PublicNavbar } from '@/components/navigation'
 import { PolicySection, PrivacyDownloadButton } from '@/components/legal'
 import { Footer } from '@/components/landing'
 import { cn } from '@/lib/utils'
@@ -13,19 +11,7 @@ export function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-card shadow-sm">
-        <div className="max-w-3xl mx-auto px-6 py-6 flex items-center justify-between">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-[#191A1D] hover:opacity-80 transition-opacity"
-            aria-label="AgentForm home"
-          >
-            <Bot className="h-6 w-6 text-[#FFE066]" />
-            <span className="font-bold text-xl">AgentForm</span>
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to home</Button>
-          </Link>
-        </div>
+        <PublicNavbar className="max-w-3xl mx-auto" />
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-12 pb-32">

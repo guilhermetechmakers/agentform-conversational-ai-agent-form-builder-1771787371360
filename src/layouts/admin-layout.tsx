@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { AdminSearchBar } from '@/components/search/admin-search-bar'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { BackForwardControls, useBreadcrumb } from '@/components/navigation'
 
 const SIDEBAR_KEY = 'agentform-admin-sidebar-collapsed'
 
@@ -58,6 +60,7 @@ export function AdminLayout() {
   }, [])
 
   const location = useLocation()
+  const breadcrumbItems = useBreadcrumb()
 
   return (
     <div className="flex min-h-screen bg-[#F7F8FA]">
@@ -194,9 +197,18 @@ export function AdminLayout() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex flex-1 items-center justify-between gap-4">
+          <BackForwardControls
+            fallbackBackPath="/admin"
+            className="hidden sm:flex shrink-0"
+          />
+          <div className="flex flex-1 items-center justify-between gap-4 min-w-0">
             <div className="flex items-center gap-4 min-w-0">
-              <h1 className="text-lg font-semibold text-[#191A1D] shrink-0">Admin Dashboard</h1>
+              {breadcrumbItems.length > 0 ? (
+                <Breadcrumb
+                  items={breadcrumbItems}
+                  className="hidden lg:flex min-w-0 max-w-[200px] xl:max-w-[280px] shrink-0"
+                />
+              ) : null}
               <AdminSearchBar className="max-w-sm flex-1" />
             </div>
             <Button variant="outline" size="sm" asChild className="shrink-0">

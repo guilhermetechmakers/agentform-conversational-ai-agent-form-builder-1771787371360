@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, Loader2, Home, AlertCircle } from 'lucide-react'
+import { PublicNavbar } from '@/components/navigation'
+import { Search, Loader2, Home, AlertCircle, LayoutDashboard } from 'lucide-react'
+import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -177,6 +179,7 @@ function SearchBox({ onResultClick }: SearchBoxProps) {
 }
 
 function NavigationLinks() {
+  const { isAuthenticated } = useAuth()
   return (
     <nav className="flex flex-col sm:flex-row gap-4 justify-center items-center">
       <Button
@@ -192,6 +195,21 @@ function NavigationLinks() {
           Go Home
         </Link>
       </Button>
+      {isAuthenticated && (
+        <Button
+          asChild
+          variant="outline"
+          className={cn(
+            'rounded-lg px-6 h-11 font-medium',
+            'transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]'
+          )}
+        >
+          <Link to="/dashboard">
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
+          </Link>
+        </Button>
+      )}
       <Button
         asChild
         variant="outline"
@@ -235,15 +253,22 @@ export function NotFoundPage() {
   return (
     <div
       className={cn(
-        'min-h-screen flex flex-col items-center justify-center bg-background px-4 py-16',
+        'min-h-screen flex flex-col bg-background',
         'animate-fade-in'
       )}
     >
+      <header className="border-b border-border bg-card shrink-0">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <PublicNavbar compact />
+        </div>
+      </header>
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-16">
       <div className="flex flex-col items-center gap-8 max-w-lg w-full">
         <ErrorMessage />
         <SearchBox />
         <NavigationLinks />
         <NotFoundFooter />
+      </div>
       </div>
     </div>
   )

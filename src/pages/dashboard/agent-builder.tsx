@@ -28,7 +28,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { cn } from '@/lib/utils'
 import {
   AgentMetaPanel,
@@ -455,18 +454,11 @@ export function AgentBuilderPage() {
     )
   }
 
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Agents Overview', href: '/dashboard/agents' },
-    { label: isNew ? 'Create Agent' : meta.name || 'Edit Agent' },
-  ]
-
   return (
     <div className="flex h-[calc(100vh-4rem)] animate-fade-in">
       <AgentSidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="flex flex-col gap-4 p-4 border-b border-border bg-card shrink-0">
-          <Breadcrumb items={breadcrumbItems} />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <Button

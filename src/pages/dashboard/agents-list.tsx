@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Bot, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
 import {
   AgentsGrid,
   QuickStatsBar,
@@ -151,12 +150,6 @@ export function AgentsListPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <Breadcrumb
-        items={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Agents Overview' },
-        ]}
-      />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Agents</h1>

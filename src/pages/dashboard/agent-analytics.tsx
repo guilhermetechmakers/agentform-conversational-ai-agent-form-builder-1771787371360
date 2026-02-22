@@ -1,7 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { ChevronLeft, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { AnalyticsCard } from '@/components/public-links'
 import { useLinkAnalytics } from '@/hooks/use-public-links'
 import * as publicLinksApi from '@/api/public-links'
@@ -45,16 +44,9 @@ export function AgentAnalyticsPage() {
     )
   }
 
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Agents Overview', href: '/dashboard/agents' },
-    { label: 'Analytics' },
-  ]
-
   if (isLoadingLink) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <Breadcrumb items={breadcrumbItems} />
         <div className="flex flex-col gap-4">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-48 rounded-xl" />
@@ -66,7 +58,6 @@ export function AgentAnalyticsPage() {
   if (!linkId) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <Breadcrumb items={breadcrumbItems} />
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <BarChart3 className="h-8 w-8 text-muted-foreground" />
@@ -85,7 +76,6 @@ export function AgentAnalyticsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <Breadcrumb items={breadcrumbItems} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
-import { Bot, AlertCircle, RefreshCw } from 'lucide-react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
+import { PublicNavbar } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import {
   PolicySection,
@@ -127,19 +127,7 @@ export function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-card shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
-            aria-label="AgentForm home"
-          >
-            <Bot className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl">AgentForm</span>
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to home</Button>
-          </Link>
-        </div>
+        <PublicNavbar className="max-w-5xl mx-auto px-4 sm:px-6" />
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 pb-32">

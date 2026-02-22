@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bot, Check, LayoutDashboard } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { PublicNavbar } from '@/components/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getPricing } from '@/api/landing'
@@ -20,25 +21,7 @@ export function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-[#EDEDED] bg-card">
-        <div className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2" aria-label="AgentForm home">
-            <div className="h-10 w-10 rounded-xl bg-[#FFE066] flex items-center justify-center">
-              <Bot className="h-6 w-6 text-[#191A1D]" />
-            </div>
-            <span className="font-bold text-xl text-[#191A1D]">AgentForm</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link to="/login">
-              <Button variant="ghost">Sign in</Button>
-            </Link>
-            <Link to="/dashboard">
-              <Button variant="outline" className="gap-2">
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Button>
-            </Link>
-          </div>
-        </div>
+        <PublicNavbar className="max-w-5xl mx-auto" />
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-16 md:py-24">

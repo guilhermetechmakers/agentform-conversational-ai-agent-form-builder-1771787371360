@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Bot } from 'lucide-react'
+import { PublicNavbar } from '@/components/navigation'
 import { cn } from '@/lib/utils'
 
 const DEMO_URL = '/a/demo'
@@ -17,34 +17,7 @@ export function HeroSection({ onVisitorLog }: HeroSectionProps) {
         <div className="absolute top-1/2 -left-40 w-80 h-80 rounded-full bg-[#E6F4FF]/30 blur-3xl animate-pulse-soft" />
       </div>
 
-      <nav className="flex items-center justify-between px-6 py-6 md:px-8 max-w-7xl mx-auto">
-        <Link to="/" className="flex items-center gap-2" aria-label="AgentForm home">
-          <div className="h-10 w-10 rounded-xl bg-[#FFE066] flex items-center justify-center">
-            <Bot className="h-6 w-6 text-[#191A1D]" />
-          </div>
-          <span className="font-bold text-xl text-[#191A1D]">AgentForm</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/login">
-            <button
-              type="button"
-              className="text-sm font-medium text-[#687076] hover:text-[#191A1D] transition-colors"
-            >
-              Sign in
-            </button>
-          </Link>
-          <Link to="/login">
-            <button
-              type="button"
-              className="cta-primary"
-              onClick={onVisitorLog}
-              aria-label="Create your first agent"
-            >
-              Create Agent
-            </button>
-          </Link>
-        </div>
-      </nav>
+      <PublicNavbar />
 
       <section className="px-6 py-20 md:py-32 md:px-8 max-w-7xl mx-auto text-center">
         <h1

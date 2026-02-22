@@ -30,6 +30,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useAuth, useSidebarState } from '@/contexts/auth-context'
 import { DashboardSearchBar } from '@/components/search/dashboard-search-bar'
+import { BackForwardControls, useBreadcrumb } from '@/components/navigation'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
@@ -47,6 +49,7 @@ export function DashboardLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const breadcrumbItems = useBreadcrumb()
 
   const handleLogout = async () => {
     await logout()
@@ -188,7 +191,17 @@ export function DashboardLayout() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="flex flex-1 items-center gap-4">
+          <BackForwardControls
+            fallbackBackPath="/dashboard"
+            className="hidden sm:flex shrink-0"
+          />
+          {breadcrumbItems.length > 0 && (
+            <Breadcrumb
+              items={breadcrumbItems}
+              className="hidden lg:flex min-w-0 max-w-[200px] xl:max-w-[280px] shrink-0"
+            />
+          )}
+          <div className="flex flex-1 items-center gap-4 min-w-0">
             <DashboardSearchBar />
             <Button asChild>
               <Link to="/dashboard/agents/new">

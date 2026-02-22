@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react'
 import { Outlet } from 'react-router-dom'
 import { HelpSidebar, getHelpSidebarState, setHelpSidebarState } from '@/components/help'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { useBreadcrumb } from '@/components/navigation/use-breadcrumb'
 import { cn } from '@/lib/utils'
 
 export function HelpLayout() {
   const [collapsed, setCollapsed] = useState(getHelpSidebarState)
+  const breadcrumbItems = useBreadcrumb()
 
   const handleToggle = useCallback(() => {
     setCollapsed((prev: boolean) => {
@@ -16,6 +19,9 @@ export function HelpLayout() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {breadcrumbItems.length > 0 && (
+        <Breadcrumb items={breadcrumbItems} />
+      )}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Help & Support</h1>
         <p className="text-muted-foreground mt-1">

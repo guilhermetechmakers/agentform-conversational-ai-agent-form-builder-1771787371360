@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useSession } from '@/hooks/use-sessions'
 import { SessionDetailPane } from '@/components/sessions'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { BackButton } from '@/components/navigation'
 
 export function SessionDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -9,15 +9,9 @@ export function SessionDetailPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <Breadcrumb
-        items={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Sessions', href: '/dashboard/sessions' },
-          {
-            label: data ? `Session ${data.id.slice(0, 8)}…` : id ?? 'Session',
-          },
-        ]}
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <BackButton fallbackTo="/dashboard/sessions" label="Back to Sessions" />
+      </div>
       <SessionDetailPane session={data} isLoading={isLoading} onRefetch={refetch} />
     </div>
   )

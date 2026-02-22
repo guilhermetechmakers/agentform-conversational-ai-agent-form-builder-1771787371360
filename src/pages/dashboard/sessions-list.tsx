@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { toast } from 'sonner'
 import { Download, LayoutGrid, List, Webhook as WebhookIcon, MessageSquare, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -215,6 +216,12 @@ export function SessionsListPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
+      <Breadcrumb
+        items={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Sessions' },
+        ]}
+      />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Sessions</h1>
