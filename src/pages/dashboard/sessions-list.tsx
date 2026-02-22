@@ -59,23 +59,27 @@ export function SessionsListPage() {
   const [activeTab, setActiveTab] = useState<'sessions' | 'webhook-logs'>('sessions')
 
   useEffect(() => {
-    setDebouncedSearch(urlSearch)
-    setFilters((prev) => ({
-      ...prev,
-      search: urlSearch,
-      status:
-        urlStatus && ['completed', 'incomplete', 'in-progress'].includes(urlStatus)
-          ? urlStatus
-          : 'all',
-    }))
+    queueMicrotask(() => {
+      setDebouncedSearch(urlSearch)
+      setFilters((prev) => ({
+        ...prev,
+        search: urlSearch,
+        status:
+          urlStatus && ['completed', 'incomplete', 'in-progress'].includes(urlStatus)
+            ? urlStatus
+            : 'all',
+      }))
+    })
   }, [urlSearch, urlStatus])
 
   useEffect(() => {
     if (!searchContext) return
     const pending = searchContext.pendingSessionsSearch
     if (pending != null && pending.trim()) {
-      setFilters((prev) => ({ ...prev, search: pending }))
-      setDebouncedSearch(pending)
+      queueMicrotask(() => {
+        setFilters((prev) => ({ ...prev, search: pending }))
+        setDebouncedSearch(pending)
+      })
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)

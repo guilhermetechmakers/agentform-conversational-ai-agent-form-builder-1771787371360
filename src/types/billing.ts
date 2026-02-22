@@ -107,4 +107,4 @@ export interface CreatePlanInput {
   price_per_month: number
 }
 
-export interface UpdatePlanInput extends Partial<CreatePlanInput> {}
+export type UpdatePlanInput = Partial<CreatePlanInput>

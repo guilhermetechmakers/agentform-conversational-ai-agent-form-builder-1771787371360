@@ -33,8 +33,10 @@ export function AgentsListPage() {
   const [accumulatedAgents, setAccumulatedAgents] = useState<AgentListItem[]>([])
 
   useEffect(() => {
-    setDebouncedSearch(urlSearch)
-    setFilters((f) => ({ ...f, search: urlSearch }))
+    queueMicrotask(() => {
+      setDebouncedSearch(urlSearch)
+      setFilters((f) => ({ ...f, search: urlSearch }))
+    })
   }, [urlSearch])
 
   const debouncedSetSearch = useMemo(
@@ -78,20 +80,24 @@ export function AgentsListPage() {
 
   useEffect(() => {
     if (!data?.agents) return
-    if (page === 1) {
-      setAccumulatedAgents(data.agents)
-    } else {
-      setAccumulatedAgents((prev) => {
-        const ids = new Set(prev.map((a) => a.id))
-        const newOnes = data.agents.filter((a) => !ids.has(a.id))
-        return [...prev, ...newOnes]
-      })
-    }
+    queueMicrotask(() => {
+      if (page === 1) {
+        setAccumulatedAgents(data.agents)
+      } else {
+        setAccumulatedAgents((prev) => {
+          const ids = new Set(prev.map((a) => a.id))
+          const newOnes = data.agents.filter((a) => !ids.has(a.id))
+          return [...prev, ...newOnes]
+        })
+      }
+    })
   }, [data?.agents, page])
 
   useEffect(() => {
-    setPage(1)
-    setAccumulatedAgents([])
+    queueMicrotask(() => {
+      setPage(1)
+      setAccumulatedAgents([])
+    })
   }, [debouncedSearch, filters.status, filters.tag, filters.sort])
 
   const handleLoadMore = useCallback(() => {

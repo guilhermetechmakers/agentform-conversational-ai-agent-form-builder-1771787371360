@@ -15,7 +15,9 @@ export function AgentAnalyticsPage() {
   useEffect(() => {
     if (!id) return
     let cancelled = false
-    setIsLoadingLink(true)
+    queueMicrotask(() => {
+      if (!cancelled) setIsLoadingLink(true)
+    })
     publicLinksApi
       .getPublicLinkByAgent(id)
       .then((link) => {

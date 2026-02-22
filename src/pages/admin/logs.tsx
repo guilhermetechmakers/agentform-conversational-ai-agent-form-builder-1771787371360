@@ -37,7 +37,7 @@ export function AdminLogsPage() {
   }, [typeFilter, dateFrom, dateTo, page, pageSize])
 
   useEffect(() => {
-    loadLogs()
+    queueMicrotask(() => loadLogs())
   }, [loadLogs])
 
   return (

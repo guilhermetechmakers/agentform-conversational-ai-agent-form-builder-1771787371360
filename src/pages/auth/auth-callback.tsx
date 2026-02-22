@@ -45,16 +45,18 @@ export function AuthCallbackPage() {
         navigate('/dashboard', { replace: true })
         return
       } catch {
-        setError('Failed to complete sign-in')
+        queueMicrotask(() => setError('Failed to complete sign-in'))
       }
     } else if (searchParams.get('error')) {
-      setError(
-        searchParams.get('error_description') ??
-          searchParams.get('error') ??
-          'Authentication failed'
+      queueMicrotask(() =>
+        setError(
+          searchParams.get('error_description') ??
+            searchParams.get('error') ??
+            'Authentication failed'
+        )
       )
     } else {
-      setError('Invalid callback: no token received')
+      queueMicrotask(() => setError('Invalid callback: no token received'))
     }
   }, [searchParams, navigate])
 

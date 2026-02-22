@@ -1,6 +1,7 @@
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
 import { AdminLayout } from '@/layouts/admin-layout'
+import { ProtectedRoute, RootLayout } from '@/routes/route-layouts'
 import { LandingPage } from '@/pages/landing'
 import { PricingPage } from '@/pages/pricing'
 import { LoginSignupPage } from '@/pages/auth/login-signup'
@@ -43,29 +44,6 @@ import {
   AdminSSOSettingsPage,
   AdminSecurityCompliancePage,
 } from '@/pages/admin'
-import { useAuth } from '@/contexts/auth-context'
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  return <>{children}</>
-}
-
-function RootLayout() {
-  return <Outlet />
-}
 
 export const router = createBrowserRouter([
   {
