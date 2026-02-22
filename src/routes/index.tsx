@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
 import { AdminLayout } from '@/layouts/admin-layout'
 import { LandingPage } from '@/pages/landing'
@@ -46,76 +46,87 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function RootLayout() {
+  return <Outlet />
+}
+
 export const router = createBrowserRouter([
-  { path: '/', element: <LandingPage /> },
-  { path: '/pricing', element: <PricingPage /> },
-  { path: '/login', element: <LoginSignupPage /> },
-  { path: '/password-reset', element: <PasswordResetPage /> },
-  { path: '/verify-email', element: <EmailVerificationPage /> },
   {
-    path: '/dashboard',
-    element: (
-      <ProtectedRoute>
-        <DashboardLayout />
-      </ProtectedRoute>
-    ),
+    path: '/',
+    element: <RootLayout />,
+    errorElement: <ServerErrorPage />,
     children: [
-      { index: true, element: <DashboardOverviewPage /> },
-      { path: 'agents', element: <AgentsListPage /> },
-      { path: 'agents/new', element: <AgentBuilderPage /> },
-      { path: 'agents/:id', element: <AgentBuilderPage /> },
-      { path: 'sessions', element: <SessionsListPage /> },
-      { path: 'sessions/:id', element: <SessionDetailPage /> },
+      { index: true, element: <LandingPage /> },
+      { path: 'pricing', element: <PricingPage /> },
+      { path: 'login', element: <LoginSignupPage /> },
+      { path: 'password-reset', element: <PasswordResetPage /> },
+      { path: 'verify-email', element: <EmailVerificationPage /> },
       {
-        path: 'settings',
-        element: <SettingsLayout />,
+        path: 'dashboard',
+        element: (
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { index: true, element: <Navigate to="/dashboard/settings/profile" replace /> },
-          { path: 'profile', element: <ProfileSection /> },
-          { path: 'team', element: <TeamSection /> },
-          { path: 'billing', element: <BillingSection /> },
-          { path: 'api-webhooks', element: <APIWebhooksSection /> },
-          { path: 'security', element: <SecuritySection /> },
-          { path: 'data-privacy', element: <DataPrivacySection /> },
+          { index: true, element: <DashboardOverviewPage /> },
+          { path: 'agents', element: <AgentsListPage /> },
+          { path: 'agents/new', element: <AgentBuilderPage /> },
+          { path: 'agents/:id', element: <AgentBuilderPage /> },
+          { path: 'sessions', element: <SessionsListPage /> },
+          { path: 'sessions/:id', element: <SessionDetailPage /> },
+          {
+            path: 'settings',
+            element: <SettingsLayout />,
+            children: [
+              { index: true, element: <Navigate to="/dashboard/settings/profile" replace /> },
+              { path: 'profile', element: <ProfileSection /> },
+              { path: 'team', element: <TeamSection /> },
+              { path: 'billing', element: <BillingSection /> },
+              { path: 'api-webhooks', element: <APIWebhooksSection /> },
+              { path: 'security', element: <SecuritySection /> },
+              { path: 'data-privacy', element: <DataPrivacySection /> },
+            ],
+          },
         ],
       },
-    ],
-  },
-  {
-    path: '/admin',
-    element: (
-      <ProtectedRoute>
-        <AdminLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      { index: true, element: <AdminOverviewPage /> },
-      { path: 'users', element: <AdminUsersPage /> },
-      { path: 'agents', element: <AdminAgentsPage /> },
-      { path: 'logs', element: <AdminLogsPage /> },
-      { path: 'billing', element: <AdminBillingPage /> },
-    ],
-  },
-  { path: '/a/:publicId', element: <PublicChatPage /> },
-  {
-    path: '/help',
-    element: <HelpPage />,
-    children: [
       {
-        element: <HelpLayout />,
+        path: 'admin',
+        element: (
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
         children: [
-          { index: true, element: <Navigate to="/help/knowledge-base" replace /> },
-          { path: 'knowledge-base', element: <KnowledgeBaseSection /> },
-          { path: 'getting-started', element: <GettingStartedSection /> },
-          { path: 'faqs', element: <FAQsSection /> },
-          { path: 'contact', element: <ContactSection /> },
-          { path: 'changelog', element: <ChangelogSection /> },
+          { index: true, element: <AdminOverviewPage /> },
+          { path: 'users', element: <AdminUsersPage /> },
+          { path: 'agents', element: <AdminAgentsPage /> },
+          { path: 'logs', element: <AdminLogsPage /> },
+          { path: 'billing', element: <AdminBillingPage /> },
         ],
       },
+      { path: 'a/:publicId', element: <PublicChatPage /> },
+      {
+        path: 'help',
+        element: <HelpPage />,
+        children: [
+          {
+            element: <HelpLayout />,
+            children: [
+              { index: true, element: <Navigate to="/help/knowledge-base" replace /> },
+              { path: 'knowledge-base', element: <KnowledgeBaseSection /> },
+              { path: 'getting-started', element: <GettingStartedSection /> },
+              { path: 'faqs', element: <FAQsSection /> },
+              { path: 'contact', element: <ContactSection /> },
+              { path: 'changelog', element: <ChangelogSection /> },
+            ],
+          },
+        ],
+      },
+      { path: 'privacy', element: <PrivacyPolicyPage /> },
+      { path: 'terms', element: <TermsOfServicePage /> },
+      { path: '500', element: <ServerErrorPage /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
-  { path: '/privacy', element: <PrivacyPolicyPage /> },
-  { path: '/terms', element: <TermsOfServicePage /> },
-  { path: '/500', element: <ServerErrorPage /> },
-  { path: '*', element: <NotFoundPage /> },
 ])
