@@ -84,3 +84,17 @@ export async function apiDelete<T>(path: string): Promise<T> {
   })
   return handleResponse<T>(response)
 }
+
+export async function apiPostFormData<T>(path: string, formData: FormData): Promise<T> {
+  const token = localStorage.getItem('access_token')
+  const headers: Record<string, string> = {}
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+  return handleResponse<T>(response)
+}

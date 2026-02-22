@@ -19,6 +19,12 @@ import { SecuritySection } from '@/pages/dashboard/settings/security-section'
 import { DataPrivacySection } from '@/pages/dashboard/settings/data-privacy-section'
 import { PublicChatPage } from '@/pages/public-chat'
 import { HelpPage } from '@/pages/help'
+import { HelpLayout } from '@/pages/help/help-layout'
+import { KnowledgeBaseSection } from '@/pages/help/knowledge-base-section'
+import { GettingStartedSection } from '@/pages/help/getting-started-section'
+import { FAQsSection } from '@/pages/help/faqs-section'
+import { ContactSection } from '@/pages/help/contact-section'
+import { ChangelogSection } from '@/pages/help/changelog-section'
 import { PrivacyPolicyPage } from '@/pages/legal/privacy'
 import { TermsOfServicePage } from '@/pages/legal/terms'
 import { NotFoundPage } from '@/pages/errors/not-found'
@@ -68,7 +74,23 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '/a/:publicId', element: <PublicChatPage /> },
-  { path: '/help', element: <HelpPage /> },
+  {
+    path: '/help',
+    element: <HelpPage />,
+    children: [
+      {
+        element: <HelpLayout />,
+        children: [
+          { index: true, element: <Navigate to="/help/knowledge-base" replace /> },
+          { path: 'knowledge-base', element: <KnowledgeBaseSection /> },
+          { path: 'getting-started', element: <GettingStartedSection /> },
+          { path: 'faqs', element: <FAQsSection /> },
+          { path: 'contact', element: <ContactSection /> },
+          { path: 'changelog', element: <ChangelogSection /> },
+        ],
+      },
+    ],
+  },
   { path: '/privacy', element: <PrivacyPolicyPage /> },
   { path: '/terms', element: <TermsOfServicePage /> },
   { path: '/500', element: <ServerErrorPage /> },
