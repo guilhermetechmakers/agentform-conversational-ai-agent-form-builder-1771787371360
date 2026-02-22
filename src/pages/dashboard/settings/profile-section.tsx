@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { CreditCard, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AvatarUploader, NotificationSettings, AccountManagement } from '@/components/profile'
+import { useBillingSummary } from '@/hooks/use-billing'
 import {
   useUserProfile,
   useUpdateProfile,
@@ -45,6 +48,7 @@ export function ProfileSection() {
   const { data: prefs, isLoading: prefsLoading, refetch: refetchPrefs, update: updatePrefs } = useNotificationPreferences()
   const { upload, remove } = useAvatarUpload()
   const { deleteAccount } = useDeleteAccount()
+  const { data: billing } = useBillingSummary()
   const [isEditing, setIsEditing] = useState(false)
 
   const form = useForm<ProfileForm>({
@@ -267,6 +271,51 @@ export function ProfileSection() {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Billing Tab - seamless transition to Billing Dashboard */}
+      <Card className="transition-all duration-300 hover:shadow-card-hover">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Billing
+            </CardTitle>
+            <CardDescription>
+              Manage your plan, payment method, and view usage
+            </CardDescription>
+          </div>
+          <Button asChild variant="outline" size="sm" className="transition-transform hover:scale-[1.02]">
+            <Link to="/dashboard/settings/billing">
+              View billing
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {billing ? (
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="rounded-lg border border-border px-4 py-2">
+                <p className="text-sm text-muted-foreground">Current plan</p>
+                <p className="font-semibold">{billing.current_plan}</p>
+              </div>
+              <div className="rounded-lg border border-border px-4 py-2">
+                <p className="text-sm text-muted-foreground">Sessions</p>
+                <p className="font-semibold">
+                  {billing.usage.sessions_used} / {billing.usage.sessions_limit}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border px-4 py-2">
+                <p className="text-sm text-muted-foreground">Tokens</p>
+                <p className="font-semibold">
+                  {billing.usage.tokens_used.toLocaleString()} / {billing.usage.tokens_limit.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Loading billing summary…</p>
+          )}
         </CardContent>
       </Card>
 

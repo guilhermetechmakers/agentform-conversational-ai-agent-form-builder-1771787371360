@@ -9,6 +9,7 @@ import type {
   SecuritySettings,
   DataPrivacySettings,
 } from '@/types/settings'
+import { fetchBilling as fetchBillingFromBillingApi } from '@/api/billing'
 
 export async function fetchUserProfile(): Promise<UserProfile> {
   return apiGet<UserProfile>('/user/profile')
@@ -56,7 +57,7 @@ export async function inviteTeamMember(
 }
 
 export async function fetchBilling(): Promise<BillingInfo> {
-  return apiGet<BillingInfo>('/billing')
+  return fetchBillingFromBillingApi()
 }
 
 export async function upgradePlan(planId: string): Promise<BillingInfo> {

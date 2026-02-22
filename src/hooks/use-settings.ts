@@ -58,13 +58,23 @@ const MOCK_BILLING: BillingInfo = {
   id: '1',
   user_id: '1',
   current_plan: 'Free',
+  plan_id: 'free',
+  price_per_month: 0,
+  renewal_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
   usage_metrics: {
     sessions_used: 42,
     sessions_limit: 100,
+    tokens_used: 12500,
+    tokens_limit: 100000,
     storage_used_mb: 12,
     storage_limit_mb: 100,
   },
   invoices: [],
+  plans: [
+    { id: 'free', name: 'Free', quota_sessions: 100, quota_tokens: 100000, price_per_month: 0 },
+    { id: 'starter', name: 'Starter', quota_sessions: 500, quota_tokens: 500000, price_per_month: 19 },
+    { id: 'pro', name: 'Pro', quota_sessions: 2000, quota_tokens: 2000000, price_per_month: 49 },
+  ],
 }
 
 const MOCK_API_KEYS: ApiKey[] = []

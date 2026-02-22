@@ -3,6 +3,29 @@
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue'
 export type SubscriptionStatus = 'active' | 'inactive'
 
+export interface BillingInfo {
+  id: string
+  user_id: string
+  current_plan: string
+  plan_id?: string
+  price_per_month?: number
+  renewal_date?: string
+  usage_metrics?: {
+    sessions_used?: number
+    sessions_limit?: number
+    tokens_used?: number
+    tokens_limit?: number
+  }
+  payment_method?: {
+    brand?: string
+    last4?: string
+    expiry_month?: number
+    expiry_year?: number
+  }
+  invoices?: Invoice[]
+  plans?: Plan[]
+}
+
 export interface Plan {
   id: string
   name: string
@@ -10,6 +33,8 @@ export interface Plan {
   quota_tokens: number
   price_per_month: number
   stripe_price_id?: string
+  description?: string
+  features?: string[]
 }
 
 export interface Subscription {
