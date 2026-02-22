@@ -12,6 +12,7 @@ import {
 } from '@/components/dashboard'
 import type { FilterState } from '@/components/dashboard'
 import { useAgents, useQuickStats } from '@/hooks/use-agents'
+import { useAgentsPublicLinkStatus } from '@/hooks/use-public-links'
 import * as agentsApi from '@/api/agents'
 import { debounce } from '@/lib/utils'
 import type { AgentStatus } from '@/types/agents'
@@ -70,6 +71,11 @@ export function AgentsListPage() {
 
   const { data, isLoading, refetch } = useAgents(apiParams)
   const { stats, isLoading: statsLoading } = useQuickStats()
+  const agentIds = useMemo(
+    () => accumulatedAgents.map((a) => a.id),
+    [accumulatedAgents]
+  )
+  const { statusMap } = useAgentsPublicLinkStatus(agentIds)
 
   useEffect(() => {
     if (!data?.agents) return
@@ -126,7 +132,20 @@ export function AgentsListPage() {
     )
   }, [])
 
-  const agents = accumulatedAgents
+  const agents = useMemo(
+    () =>
+      accumulatedAgents.map((a) => {
+        const status = statusMap[a.id]
+        return {
+          ...a,
+          has_public_link: status?.has_public_link ?? a.has_public_link,
+          link_views: status?.analytics?.views ?? a.link_views,
+          link_unique_visitors:
+            status?.analytics?.unique_visitors ?? a.link_unique_visitors,
+        }
+      }),
+    [accumulatedAgents, statusMap]
+  )
   const hasMore = data?.has_more ?? false
   const isLoadingMore = isLoading && page > 1
 

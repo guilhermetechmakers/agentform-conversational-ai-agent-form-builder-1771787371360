@@ -37,12 +37,14 @@ import {
   ContextualDocsUploader,
   TestConsole,
   PublishSettings,
+  PublicLinkSettings,
 } from '@/components/agent-builder'
 import type {
   AgentMetaState,
   PersonaState,
   PromptTemplateState,
   PublishSettingsState,
+  PublicLinkSettingsState,
 } from '@/components/agent-builder'
 import type { ContextualDoc } from '@/components/agent-builder'
 import type { AgentField, ConditionalRule } from '@/types'
@@ -121,12 +123,30 @@ function mapApiToPersona(res: AgentDetailResponse): PersonaState {
 
 function mapApiToPublishSettings(res: AgentDetailResponse): PublishSettingsState {
   const s = res.publish_settings
+  const urlToken = s?.url_token ?? res.url_token
   return {
-    url_token: s?.url_token ?? res.url_token,
+    url_token: urlToken,
     expiry: s?.expiry,
     password: s?.password,
     webhook_url: s?.webhook_url,
     webhook_headers: s?.webhook_headers,
+    public_link_enabled: !!urlToken,
+    analytics_enabled: true,
+  }
+}
+
+function mapApiToPublicLinkState(
+  res: AgentDetailResponse,
+  baseUrl: string
+): PublicLinkSettingsState {
+  const token = res.publish_settings?.url_token ?? res.url_token
+  const linkId = res.publish_settings?.link_id ?? null
+  const hasToken = Boolean(token)
+  return {
+    enabled: hasToken,
+    linkUrl: hasToken ? `${baseUrl}/a/${token}` : null,
+    linkId: linkId ?? null,
+    analyticsEnabled: true,
   }
 }
 
@@ -176,6 +196,12 @@ export function AgentBuilderPage() {
   const [docs, setDocs] = useState<ContextualDoc[]>([])
   const [promptTemplate, setPromptTemplate] = useState<PromptTemplateState>({})
   const [publishSettings, setPublishSettings] = useState<PublishSettingsState>({})
+  const [publicLinkState, setPublicLinkState] = useState<PublicLinkSettingsState>({
+    enabled: false,
+    linkUrl: null,
+    linkId: null,
+    analyticsEnabled: true,
+  })
 
   const loadAgent = useCallback(async (agentId: string) => {
     setIsLoading(true)
@@ -187,6 +213,9 @@ export function AgentBuilderPage() {
       setPromptTemplate(mapApiToPromptTemplate(res))
       setDocs(mapApiToContextualDocs(res))
       setPublishSettings(mapApiToPublishSettings(res))
+      setPublicLinkState(
+        mapApiToPublicLinkState(res, window.location.origin)
+      )
     } catch {
       toast.error('Failed to load agent')
       navigate('/dashboard/agents')
@@ -580,12 +609,26 @@ export function AgentBuilderPage() {
             />
           )}
           {activeSection === 'publish' && (
-            <PublishSettings
-              settings={publishSettings}
-              onChange={(u) => setPublishSettings((s) => ({ ...s, ...u }))}
-              agentId={id}
-              isNew={isNew}
-            />
+            <div className="space-y-6">
+              <PublicLinkSettings
+                settings={publishSettings}
+                publicLinkState={publicLinkState}
+                onChange={(u: Partial<PublishSettingsState>) =>
+                  setPublishSettings((s: PublishSettingsState) => ({ ...s, ...u }))
+                }
+                onPublicLinkChange={(u: Partial<PublicLinkSettingsState>) =>
+                  setPublicLinkState((s: PublicLinkSettingsState) => ({ ...s, ...u }))
+                }
+                agentId={id}
+                isNew={isNew}
+              />
+              <PublishSettings
+                settings={publishSettings}
+                onChange={(u) => setPublishSettings((s) => ({ ...s, ...u }))}
+                agentId={id}
+                isNew={isNew}
+              />
+            </div>
           )}
         </main>
         </div>

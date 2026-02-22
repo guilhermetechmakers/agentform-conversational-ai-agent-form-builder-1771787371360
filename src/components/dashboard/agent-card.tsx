@@ -6,6 +6,9 @@ import {
   Trash2,
   MessageSquare,
   Link2,
+  Eye,
+  Users,
+  BarChart3,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -91,7 +94,29 @@ export function AgentCard({
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {agent.sessions_count} sessions · {agent.conversion_rate}%
                   conversion
+                  {agent.has_public_link && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs font-medium text-primary">
+                      <Link2 className="h-3 w-3" />
+                      Public link
+                    </span>
+                  )}
                 </p>
+                {(agent.link_views !== undefined || agent.link_unique_visitors !== undefined) && (
+                  <p className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                    {agent.link_views !== undefined && (
+                      <span className="flex items-center gap-1">
+                        <Eye className="h-3.5 w-3.5" />
+                        {agent.link_views} views
+                      </span>
+                    )}
+                    {agent.link_unique_visitors !== undefined && (
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5" />
+                        {agent.link_unique_visitors} unique
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           </Link>
@@ -129,6 +154,14 @@ export function AgentCard({
                     View sessions
                   </Link>
                 </DropdownMenuItem>
+                {agent.has_public_link && (
+                  <DropdownMenuItem asChild>
+                    <Link to={`/dashboard/agents/${agent.id}/analytics`}>
+                      <BarChart3 className="mr-2 h-4 w-4" />
+                      View analytics
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => onCopyLink?.(agent.id)}
                 >

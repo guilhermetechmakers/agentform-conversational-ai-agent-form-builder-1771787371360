@@ -1,9 +1,7 @@
-import { Copy, ExternalLink, Key, Link2, Webhook } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Webhook } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { toast } from 'sonner'
 
 export interface PublishSettingsState {
   url_token?: string
@@ -12,6 +10,10 @@ export interface PublishSettingsState {
   webhook_url?: string
   webhook_headers?: Record<string, string>
   webhook_secret?: string
+  /** Public link feature */
+  public_link_enabled?: boolean
+  link_id?: string | null
+  analytics_enabled?: boolean
 }
 
 interface PublishSettingsProps {
@@ -24,98 +26,20 @@ interface PublishSettingsProps {
 export function PublishSettings({
   settings,
   onChange,
-  agentId,
-  isNew = false,
 }: PublishSettingsProps) {
-  const publicUrl = settings.url_token
-    ? `${window.location.origin}/a/${settings.url_token}`
-    : isNew
-      ? ''
-      : agentId
-        ? `${window.location.origin}/a/${agentId}`
-        : ''
-
-  const handleCopyLink = () => {
-    if (!publicUrl) return
-    navigator.clipboard.writeText(publicUrl).then(
-      () => toast.success('Link copied to clipboard'),
-      () => toast.error('Failed to copy')
-    )
-  }
-
   return (
     <Card className="transition-all duration-300 hover:shadow-card-hover">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Link2 className="h-5 w-5" />
-          Publish settings
+          <Webhook className="h-5 w-5" />
+          Webhooks
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Configure public URL, link expiry, and webhooks
+          Receive form submissions at your endpoint
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label>Public URL</Label>
-          <div className="flex gap-2">
-            <Input
-              value={publicUrl}
-              readOnly
-              className="font-mono text-sm bg-muted/50"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyLink}
-              disabled={!publicUrl}
-              className="shrink-0"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            {publicUrl && (
-              <Button variant="outline" size="sm" asChild className="shrink-0">
-                <a
-                  href={publicUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open in new tab"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="link-expiry">Link expiry (optional)</Label>
-          <Input
-            id="link-expiry"
-            type="datetime-local"
-            value={settings.expiry ?? ''}
-            onChange={(e) => onChange({ expiry: e.target.value || undefined })}
-            className="font-mono text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            Leave empty for no expiry
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            Password protection (optional)
-          </Label>
-          <Input
-            id="password"
-            type="password"
-            value={settings.password ?? ''}
-            onChange={(e) => onChange({ password: e.target.value || undefined })}
-            placeholder="Leave empty for public access"
-          />
-        </div>
-
-        <div className="space-y-2 pt-4 border-t border-border">
           <Label htmlFor="webhook-url" className="flex items-center gap-2">
             <Webhook className="h-4 w-4" />
             Webhook URL

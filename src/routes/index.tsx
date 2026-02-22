@@ -10,6 +10,7 @@ import { AuthCallbackPage } from '@/pages/auth/auth-callback'
 import { DashboardOverviewPage } from '@/pages/dashboard/overview'
 import { AgentsListPage } from '@/pages/dashboard/agents-list'
 import { AgentBuilderPage } from '@/pages/dashboard/agent-builder'
+import { AgentAnalyticsPage } from '@/pages/dashboard/agent-analytics'
 import { SessionsListPage } from '@/pages/dashboard/sessions-list'
 import { SessionDetailPage } from '@/pages/dashboard/session-detail'
 import { OperationsPage } from '@/pages/dashboard/operations'
@@ -88,6 +89,7 @@ export const router = createBrowserRouter([
           { path: 'agents', element: <AgentsListPage /> },
           { path: 'agents/new', element: <AgentBuilderPage /> },
           { path: 'agents/:id', element: <AgentBuilderPage /> },
+          { path: 'agents/:id/analytics', element: <AgentAnalyticsPage /> },
           { path: 'sessions', element: <SessionsListPage /> },
           { path: 'sessions/:id', element: <SessionDetailPage /> },
           { path: 'operations', element: <OperationsPage /> },

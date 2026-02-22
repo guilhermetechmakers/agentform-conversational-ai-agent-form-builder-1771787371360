@@ -10,6 +10,10 @@ export interface AgentListItem {
   created_at: string
   updated_at: string
   tags?: string[]
+  /** Public link status (when available) */
+  has_public_link?: boolean
+  link_views?: number
+  link_unique_visitors?: number
 }
 
 export interface AgentsListResponse {

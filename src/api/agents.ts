@@ -91,6 +91,7 @@ export interface AgentDetailResponse {
   contextual_docs?: Array<{ id: string; type: string; content?: string }>
   publish_settings?: {
     url_token?: string
+    link_id?: string
     expiry?: string
     password?: string
     webhook_url?: string
