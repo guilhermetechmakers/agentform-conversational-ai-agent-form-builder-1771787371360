@@ -1,55 +1,109 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useState, useCallback } from 'react'
 import { Webhook as WebhookIcon, Plus, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useWebhooks } from '@/hooks/use-settings'
-import * as settingsApi from '@/api/settings'
+import { WebhookForm, type WebhookFormValues } from '@/components/webhooks'
+import { useWebhookConfigs } from '@/hooks/use-webhooks'
+import { useAgents } from '@/hooks/use-agents'
+import * as webhooksApi from '@/api/webhooks'
 import { toast } from 'sonner'
-
-const webhookSchema = z.object({
-  endpoint: z.string().url('Enter a valid URL'),
-})
-
-type WebhookForm = z.infer<typeof webhookSchema>
+import type { WebhookConfig } from '@/types/webhooks'
 
 export function WebhooksCard() {
-  const { data: webhooks, isLoading, error, refetch } = useWebhooks()
-  const [open, setOpen] = useState(false)
+  const { data: webhooks, isLoading, error, refetch } = useWebhookConfigs()
+  const { data: agentsData } = useAgents({ page_size: 100 })
+  const agents = agentsData?.agents ?? []
+  const agentOptions = agents.map((a) => ({ id: a.id, name: a.name }))
+
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(null)
+  const [selectedAgentId, setSelectedAgentId] = useState('')
   const [createLoading, setCreateLoading] = useState(false)
 
-  const form = useForm<WebhookForm>({
-    resolver: zodResolver(webhookSchema),
-    defaultValues: { endpoint: '' },
-  })
+  const handleSubmit = useCallback(
+    async (values: WebhookFormValues) => {
+      const agentId = editingWebhook?.agent_id ?? selectedAgentId
+      if (!agentId) {
+        toast.error('Please select an agent')
+        return
+      }
+      setCreateLoading(true)
+      try {
+        const headers: Record<string, string> = {}
+        ;(values.headers ?? []).forEach((h) => {
+          if (h.key?.trim()) headers[h.key.trim()] = h.value ?? ''
+        })
+        const payload = {
+          agent_id: agentId,
+          url: values.url,
+          headers: Object.keys(headers).length ? headers : undefined,
+          secret_key: values.secretEnabled ? values.secretKey : undefined,
+          event_types: values.eventTypes as WebhookConfig['event_types'],
+        }
+        if (editingWebhook) {
+          await webhooksApi.updateWebhook(editingWebhook.id, payload)
+          toast.success('Webhook updated successfully')
+        } else {
+          await webhooksApi.createWebhook(payload)
+          toast.success('Webhook added successfully')
+        }
+        setDialogOpen(false)
+        setEditingWebhook(null)
+        refetch()
+      } catch {
+        toast.error(editingWebhook ? 'Failed to update webhook' : 'Failed to add webhook')
+      } finally {
+        setCreateLoading(false)
+      }
+    },
+    [refetch, editingWebhook, selectedAgentId]
+  )
 
-  const handleCreate = form.handleSubmit(async (values) => {
-    setCreateLoading(true)
-    try {
-      await settingsApi.createWebhook(values.endpoint)
-      toast.success('Webhook added successfully')
-      form.reset({ endpoint: '' })
-      setOpen(false)
-      refetch()
-    } catch {
-      toast.error('Failed to add webhook')
-    } finally {
-      setCreateLoading(false)
-    }
-  })
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await webhooksApi.deleteWebhook(id)
+        toast.success('Webhook removed')
+        refetch()
+      } catch {
+        toast.error('Failed to remove webhook')
+      }
+    },
+    [refetch]
+  )
+
+  const openAdd = useCallback(() => {
+    setEditingWebhook(null)
+    setSelectedAgentId(agentOptions[0]?.id ?? '')
+    setDialogOpen(true)
+  }, [agentOptions])
+
+  const openEdit = useCallback((wh: WebhookConfig) => {
+    setEditingWebhook(wh)
+    setSelectedAgentId(wh.agent_id)
+    setDialogOpen(true)
+  }, [])
+
+  const closeDialog = useCallback(() => {
+    setDialogOpen(false)
+    setEditingWebhook(null)
+  }, [])
 
   if (isLoading) {
     return (
@@ -84,10 +138,12 @@ export function WebhooksCard() {
         <CardHeader className="flex flex-row items-start justify-between space-y-0">
           <div>
             <CardTitle>Webhooks</CardTitle>
-            <CardDescription>Configure webhook endpoints for event notifications</CardDescription>
+            <CardDescription>
+              Configure per-agent webhook endpoints for session events
+            </CardDescription>
           </div>
           <Button
-            onClick={() => setOpen(true)}
+            onClick={openAdd}
             className="transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" />
@@ -102,31 +158,52 @@ export function WebhooksCard() {
               <p className="text-sm text-muted-foreground mt-1">
                 Add a webhook URL to receive events when sessions complete.
               </p>
-              <Button variant="outline" className="mt-4" onClick={() => setOpen(true)}>
+              <Button variant="outline" className="mt-4" onClick={openAdd}>
                 Add your first webhook
               </Button>
             </div>
           ) : (
             <ul className="space-y-4">
-              {webhooks.map((wh) => (
-                <li
-                  key={wh.id}
-                  className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <WebhookIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
-                    <p className="text-sm font-mono truncate">{wh.endpoint}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    aria-label="Remove webhook"
+              {webhooks.map((wh) => {
+                const agent = agents.find((a) => a.id === wh.agent_id)
+                return (
+                  <li
+                    key={wh.id}
+                    className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </li>
-              ))}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <WebhookIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-mono truncate">{wh.url}</p>
+                        {agent && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Agent: {agent.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(wh)}
+                        className="transition-transform hover:scale-[1.02]"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(wh.id)}
+                        className="text-destructive hover:text-destructive"
+                        aria-label="Remove webhook"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
           <p className="text-sm text-muted-foreground mt-4">
@@ -135,38 +212,62 @@ export function WebhooksCard() {
         </CardContent>
       </Card>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Add webhook</DialogTitle>
+            <DialogTitle>{editingWebhook ? 'Edit webhook' : 'Add webhook'}</DialogTitle>
             <DialogDescription>
-              Enter the URL where you want to receive webhook events.
+              Configure the endpoint URL, headers, signing, and event types for webhook delivery.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
+          {agentOptions.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="webhook-endpoint">Endpoint URL</Label>
-              <Input
-                id="webhook-endpoint"
-                type="url"
-                placeholder="https://example.com/webhook"
-                {...form.register('endpoint')}
-              />
-              {form.formState.errors.endpoint && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.endpoint.message}
-                </p>
-              )}
+              <Label>Agent</Label>
+              <Select
+                value={editingWebhook ? editingWebhook.agent_id : selectedAgentId}
+                onValueChange={(v) => setSelectedAgentId(v)}
+                disabled={!!editingWebhook}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agentOptions.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createLoading}>
-                {createLoading ? 'Adding…' : 'Add webhook'}
-              </Button>
-            </DialogFooter>
-          </form>
+          )}
+          <WebhookForm
+            agentId={editingWebhook?.agent_id ?? selectedAgentId}
+            agentName={
+              editingWebhook
+                ? agents.find((a) => a.id === editingWebhook.agent_id)?.name
+                : agents.find((a) => a.id === selectedAgentId)?.name
+            }
+            initialValues={
+              editingWebhook
+                ? {
+                    url: editingWebhook.url,
+                    headers: editingWebhook.headers
+                      ? Object.entries(editingWebhook.headers).map(([key, value]) => ({
+                          key,
+                          value,
+                        }))
+                      : [],
+                    secretEnabled: !!editingWebhook.secret_key,
+                    secretKey: editingWebhook.secret_key ?? '',
+                    eventTypes: editingWebhook.event_types,
+                  }
+                : undefined
+            }
+            onSubmit={handleSubmit}
+            onCancel={closeDialog}
+            isLoading={createLoading}
+          />
         </DialogContent>
       </Dialog>
     </>

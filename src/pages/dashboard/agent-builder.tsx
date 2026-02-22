@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   Check,
   Loader2,
+  Webhook,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,7 @@ import {
   PublishSettings,
   PublicLinkSettings,
 } from '@/components/agent-builder'
+import { AgentWebhooksPanel } from '@/components/webhooks'
 import type {
   AgentMetaState,
   PersonaState,
@@ -58,6 +60,7 @@ const SIDEBAR_SECTIONS = [
   { id: 'prompt', label: 'Prompt templates', icon: FileCode2 },
   { id: 'docs', label: 'Contextual docs', icon: FileText },
   { id: 'test', label: 'Test console', icon: Play },
+  { id: 'webhooks', label: 'Webhooks', icon: Webhook },
   { id: 'publish', label: 'Publish settings', icon: Settings },
 ] as const
 
@@ -606,6 +609,12 @@ export function AgentBuilderPage() {
               avatarUrl={meta.avatar_url}
               fields={fields}
               personaInstructions={persona.instructions}
+            />
+          )}
+          {activeSection === 'webhooks' && id && !isNew && (
+            <AgentWebhooksPanel
+              agentId={id}
+              agentName={meta.name || persona.name || 'Agent'}
             />
           )}
           {activeSection === 'publish' && (
