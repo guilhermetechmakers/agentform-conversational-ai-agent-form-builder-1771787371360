@@ -12,8 +12,6 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
-const SIDEBAR_KEY = 'agentform-help-sidebar-collapsed'
-
 const navItems = [
   { to: '/help/knowledge-base', icon: BookOpen, label: 'Knowledge Base' },
   { to: '/help/getting-started', icon: Rocket, label: 'Getting Started' },
@@ -80,20 +78,4 @@ export function HelpSidebar({ collapsed, onToggle }: HelpSidebarProps) {
       </div>
     </aside>
   )
-}
-
-export function getHelpSidebarState(): boolean {
-  try {
-    return localStorage.getItem(SIDEBAR_KEY) === 'true'
-  } catch {
-    return false
-  }
-}
-
-export function setHelpSidebarState(collapsed: boolean): void {
-  try {
-    localStorage.setItem(SIDEBAR_KEY, String(collapsed))
-  } catch {
-    // ignore
-  }
 }

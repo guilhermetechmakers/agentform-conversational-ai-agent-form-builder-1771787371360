@@ -34,7 +34,7 @@ export function AdminAgentsPage() {
   }, [search, statusFilter, page, pageSize])
 
   useEffect(() => {
-    loadAgents()
+    queueMicrotask(() => loadAgents())
   }, [loadAgents])
 
   const handleTakeDown = useCallback((agentId: string) => {

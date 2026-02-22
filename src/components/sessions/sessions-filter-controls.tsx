@@ -8,28 +8,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { SessionStatus } from '@/types/sessions'
-
-export interface SessionsFilterState {
-  search: string
-  agent_id: string
-  status: SessionStatus | 'all'
-  tag: string
-  date_from: string
-  date_to: string
-  sort: string
-  sort_dir: 'asc' | 'desc'
-}
+import {
+  type SessionsFilterControlsState,
+  DEFAULT_SESSIONS_FILTER_CONTROLS,
+} from '@/types/sessions-filter-controls-state'
 
 interface SessionsFilterControlsProps {
-  filters: SessionsFilterState
-  onFiltersChange: (filters: SessionsFilterState) => void
+  filters: SessionsFilterControlsState
+  onFiltersChange: (filters: SessionsFilterControlsState) => void
   onSearchChange: (search: string) => void
   agents?: Array<{ id: string; name: string }>
   tags?: string[]
 }
 
-const STATUS_OPTIONS: { value: SessionsFilterState['status']; label: string }[] = [
+const STATUS_OPTIONS: { value: SessionsFilterControlsState['status']; label: string }[] = [
   { value: 'all', label: 'All statuses' },
   { value: 'completed', label: 'Completed' },
   { value: 'incomplete', label: 'Incomplete' },
@@ -41,17 +33,6 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: 'status', label: 'Status' },
   { value: 'visitor_identifier', label: 'Visitor' },
 ]
-
-export const DEFAULT_SESSIONS_FILTERS: SessionsFilterState = {
-  search: '',
-  agent_id: '',
-  status: 'all',
-  tag: '',
-  date_from: '',
-  date_to: '',
-  sort: 'created_at',
-  sort_dir: 'desc',
-}
 
 export function SessionsFilterControls({
   filters,
@@ -71,7 +52,7 @@ export function SessionsFilterControls({
 
   const clearFilters = () => {
     onFiltersChange({
-      ...DEFAULT_SESSIONS_FILTERS,
+      ...DEFAULT_SESSIONS_FILTER_CONTROLS,
     })
     onSearchChange('')
   }
@@ -129,7 +110,7 @@ export function SessionsFilterControls({
           <Select
             value={filters.status}
             onValueChange={(v) =>
-              onFiltersChange({ ...filters, status: v as SessionsFilterState['status'] })
+              onFiltersChange({ ...filters, status: v as SessionsFilterControlsState['status'] })
             }
           >
             <SelectTrigger className="w-[160px]">

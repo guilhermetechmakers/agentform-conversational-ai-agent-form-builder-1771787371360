@@ -14,8 +14,6 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
-const SIDEBAR_KEY = 'agentform-settings-sidebar-collapsed'
-
 const navItems = [
   { to: '/dashboard/settings/profile', icon: User, label: 'Account Profile' },
   { to: '/dashboard/settings/team', icon: Users, label: 'Team Management' },
@@ -87,20 +85,4 @@ export function SettingsSidebar({ collapsed, onToggle }: SettingsSidebarProps) {
       </div>
     </aside>
   )
-}
-
-export function getSettingsSidebarState(): boolean {
-  try {
-    return localStorage.getItem(SIDEBAR_KEY) === 'true'
-  } catch {
-    return false
-  }
-}
-
-export function setSettingsSidebarState(collapsed: boolean): void {
-  try {
-    localStorage.setItem(SIDEBAR_KEY, String(collapsed))
-  } catch {
-    // ignore
-  }
 }

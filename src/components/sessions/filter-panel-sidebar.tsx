@@ -12,7 +12,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
-import type { SessionsFilterState } from './sessions-filters'
+import type { SessionsFilterState } from '@/types/sessions-filters-state'
 
 const STATUS_OPTIONS: { value: SessionsFilterState['status']; label: string }[] = [
   { value: 'all', label: 'All statuses' },
@@ -21,54 +21,26 @@ const STATUS_OPTIONS: { value: SessionsFilterState['status']; label: string }[] 
   { value: 'in-progress', label: 'In progress' },
 ]
 
-interface FilterPanelSidebarProps {
+interface FilterContentProps {
   filters: SessionsFilterState
   onFiltersChange: (filters: SessionsFilterState) => void
-  /** Called when filters are cleared, to sync search input and URL */
-  onSearchClear?: () => void
-  agents?: Array<{ id: string; name: string }>
-  availableTags?: string[]
-  availableFields?: string[]
-  className?: string
+  hasActiveFilters: boolean
+  clearFilters: () => void
+  agents: Array<{ id: string; name: string }>
+  availableTags: string[]
+  availableFields: string[]
 }
 
-export function FilterPanelSidebar({
+function FilterContent({
   filters,
   onFiltersChange,
-  onSearchClear,
-  agents = [],
-  availableTags = [],
-  availableFields = [],
-  className,
-}: FilterPanelSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-
-  const hasActiveFilters =
-    filters.search ||
-    filters.agent_id ||
-    filters.status !== 'all' ||
-    filters.tag ||
-    filters.date_from ||
-    filters.date_to ||
-    filters.field_name ||
-    filters.field_value
-
-  const clearFilters = useCallback(() => {
-    onFiltersChange({
-      search: '',
-      agent_id: '',
-      status: 'all',
-      tag: '',
-      date_from: '',
-      date_to: '',
-      field_name: '',
-      field_value: '',
-    })
-    onSearchClear?.()
-  }, [onFiltersChange, onSearchClear])
-
-  const FilterContent = () => (
+  hasActiveFilters,
+  clearFilters,
+  agents,
+  availableTags,
+  availableFields,
+}: FilterContentProps) {
+  return (
     <div className="space-y-6 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -231,6 +203,65 @@ export function FilterPanelSidebar({
       )}
     </div>
   )
+}
+
+interface FilterPanelSidebarProps {
+  filters: SessionsFilterState
+  onFiltersChange: (filters: SessionsFilterState) => void
+  /** Called when filters are cleared, to sync search input and URL */
+  onSearchClear?: () => void
+  agents?: Array<{ id: string; name: string }>
+  availableTags?: string[]
+  availableFields?: string[]
+  className?: string
+}
+
+export function FilterPanelSidebar({
+  filters,
+  onFiltersChange,
+  onSearchClear,
+  agents = [],
+  availableTags = [],
+  availableFields = [],
+  className,
+}: FilterPanelSidebarProps) {
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const hasActiveFilters = Boolean(
+    filters.search ||
+    filters.agent_id ||
+    filters.status !== 'all' ||
+    filters.tag ||
+    filters.date_from ||
+    filters.date_to ||
+    filters.field_name ||
+    filters.field_value
+  )
+
+  const clearFilters = useCallback(() => {
+    onFiltersChange({
+      search: '',
+      agent_id: '',
+      status: 'all',
+      tag: '',
+      date_from: '',
+      date_to: '',
+      field_name: '',
+      field_value: '',
+    })
+    onSearchClear?.()
+  }, [onFiltersChange, onSearchClear])
+
+  const filterContentProps: FilterContentProps = {
+    filters,
+    onFiltersChange,
+    hasActiveFilters,
+    clearFilters,
+    agents,
+    availableTags,
+    availableFields,
+  }
 
   return (
     <>
@@ -269,7 +300,7 @@ export function FilterPanelSidebar({
               </Button>
             </div>
             <ScrollArea className="flex-1">
-              <FilterContent />
+              <FilterContent {...filterContentProps} />
             </ScrollArea>
           </>
         )}
@@ -314,7 +345,7 @@ export function FilterPanelSidebar({
                 </Button>
               </div>
               <ScrollArea className="flex-1">
-                <FilterContent />
+                <FilterContent {...filterContentProps} />
               </ScrollArea>
             </aside>
           </>

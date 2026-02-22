@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Outlet } from 'react-router-dom'
-import { HelpSidebar, getHelpSidebarState, setHelpSidebarState } from '@/components/help'
+import { HelpSidebar } from '@/components/help'
+import { getHelpSidebarState, setHelpSidebarState } from '@/lib/help-sidebar-state'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useBreadcrumb } from '@/components/navigation/use-breadcrumb'
 import { cn } from '@/lib/utils'

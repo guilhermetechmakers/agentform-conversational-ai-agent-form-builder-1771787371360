@@ -104,7 +104,9 @@ export function useQuickStats() {
 
   useEffect(() => {
     let cancelled = false
-    setIsLoading(true)
+    queueMicrotask(() => {
+      if (!cancelled) setIsLoading(true)
+    })
     agentsApi
       .fetchQuickStats()
       .then((res) => {

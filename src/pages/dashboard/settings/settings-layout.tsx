@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Outlet } from 'react-router-dom'
-import { SettingsSidebar, getSettingsSidebarState, setSettingsSidebarState } from '@/components/settings'
+import { SettingsSidebar } from '@/components/settings'
+import { getSettingsSidebarState, setSettingsSidebarState } from '@/lib/settings-sidebar-state'
 import { cn } from '@/lib/utils'
 
 export function SettingsLayout() {

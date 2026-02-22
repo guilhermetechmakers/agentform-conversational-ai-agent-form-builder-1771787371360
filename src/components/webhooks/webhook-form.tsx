@@ -52,6 +52,7 @@ export interface WebhookFormProps {
 }
 
 export function WebhookForm({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- agentId required by parent
   agentId: _agentId,
   agentName,
   initialValues,

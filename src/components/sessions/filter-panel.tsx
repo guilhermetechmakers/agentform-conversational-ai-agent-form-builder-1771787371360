@@ -3,7 +3,7 @@ import { Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { SessionsFilters } from './sessions-filters'
-import type { SessionsFilterState } from './sessions-filters'
+import type { SessionsFilterState } from '@/types/sessions-filters-state'
 export interface FilterPanelProps {
   filters: SessionsFilterState
   onFiltersChange: (filters: SessionsFilterState) => void

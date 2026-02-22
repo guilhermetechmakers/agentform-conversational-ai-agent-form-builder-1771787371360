@@ -1,4 +1,4 @@
-export { SettingsSidebar, getSettingsSidebarState, setSettingsSidebarState } from './settings-sidebar'
+export { SettingsSidebar } from './settings-sidebar'
 export { ProfileCard } from './profile-card'
 export { TeamManagementCard } from './team-management-card'
 export { BillingCard } from './billing-card'

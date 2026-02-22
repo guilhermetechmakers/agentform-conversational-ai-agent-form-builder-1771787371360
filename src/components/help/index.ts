@@ -6,8 +6,4 @@ export { GettingStartedGuide } from './getting-started-guide'
 export { FAQSection } from './faq-section'
 export { SupportContactForm } from './support-contact-form'
 export { ChangelogStatus } from './changelog-status'
-export {
-  HelpSidebar,
-  getHelpSidebarState,
-  setHelpSidebarState,
-} from './help-sidebar'
+export { HelpSidebar } from './help-sidebar'

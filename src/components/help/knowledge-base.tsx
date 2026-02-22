@@ -20,8 +20,11 @@ export function KnowledgeBase() {
 
   useEffect(() => {
     if (initialSearch) {
-      setSearchInput(initialSearch)
-      setEffectiveSearch(initialSearch.trim() || undefined)
+      const trimmed = initialSearch.trim() || undefined
+      queueMicrotask(() => {
+        setSearchInput(initialSearch)
+        setEffectiveSearch(trimmed)
+      })
     }
   }, [initialSearch])
 

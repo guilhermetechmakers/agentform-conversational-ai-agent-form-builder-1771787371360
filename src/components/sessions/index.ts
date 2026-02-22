@@ -1,8 +1,8 @@
+export { SessionsFilters } from './sessions-filters'
 export {
-  SessionsFilters,
   DEFAULT_SESSIONS_FILTERS,
   type SessionsFilterState,
-} from './sessions-filters'
+} from '@/types/sessions-filters-state'
 export { FilterPanel } from './filter-panel'
 export { FilterPanelSidebar } from './filter-panel-sidebar'
 export { StatusFilterChips } from './status-filter-chips'

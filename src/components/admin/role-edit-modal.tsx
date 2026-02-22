@@ -56,9 +56,9 @@ export function RoleEditModal({
 
   useEffect(() => {
     if (open) {
-      setSelectedRole(
+      const next =
         rbacRoles.includes(currentRole as RbacRole) ? (currentRole as RbacRole) : 'viewer'
-      )
+      queueMicrotask(() => setSelectedRole(next))
     }
   }, [open, currentRole])
 

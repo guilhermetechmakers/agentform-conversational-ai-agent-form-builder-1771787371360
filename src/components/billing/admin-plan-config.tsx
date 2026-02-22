@@ -73,7 +73,7 @@ export function AdminPlanConfig({ plans, isLoading, onRefetch }: AdminPlanConfig
       setCreateOpen(false)
       form.reset()
       onRefetch()
-    } catch (err) {
+    } catch {
       toast.error('Failed to create plan')
     } finally {
       setIsSubmitting(false)
@@ -88,7 +88,7 @@ export function AdminPlanConfig({ plans, isLoading, onRefetch }: AdminPlanConfig
       toast.success('Plan updated successfully')
       setEditingPlan(null)
       onRefetch()
-    } catch (err) {
+    } catch {
       toast.error('Failed to update plan')
     } finally {
       setIsSubmitting(false)
@@ -102,7 +102,7 @@ export function AdminPlanConfig({ plans, isLoading, onRefetch }: AdminPlanConfig
       await deletePlan(plan.id)
       toast.success('Plan deleted')
       onRefetch()
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete plan')
     } finally {
       setIsDeleting(false)

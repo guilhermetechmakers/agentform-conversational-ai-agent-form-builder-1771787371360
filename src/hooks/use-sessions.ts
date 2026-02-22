@@ -201,7 +201,7 @@ export function useSession(id: string | null) {
   }, [id])
 
   useEffect(() => {
-    fetchSession()
+    queueMicrotask(() => fetchSession())
   }, [fetchSession])
 
   return { data, isLoading, error, refetch: fetchSession }

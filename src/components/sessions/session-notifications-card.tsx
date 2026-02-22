@@ -24,7 +24,9 @@ export function SessionNotificationsCard() {
 
   useEffect(() => {
     let cancelled = false
-    setEvents([])
+    queueMicrotask(() => {
+      if (!cancelled) setEvents([])
+    })
     fetchEmailEvents({ event_type: 'session_completed', page_size: 5 })
       .then((res) => {
         if (!cancelled) setEvents(res.events ?? [])

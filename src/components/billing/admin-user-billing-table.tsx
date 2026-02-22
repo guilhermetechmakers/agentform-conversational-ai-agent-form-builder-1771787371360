@@ -42,7 +42,7 @@ interface AdminUserBillingTableProps {
 
 export function AdminUserBillingTable({
   data,
-  total: _total,
+  total,
   isLoading,
   search = '',
   planFilter = '',
@@ -57,6 +57,7 @@ export function AdminUserBillingTable({
         <CardTitle>User Billing Overview</CardTitle>
         <CardDescription>
           Search and filter users by billing status, plan, and outstanding invoices
+          {total > 0 && ` · ${total} user${total === 1 ? '' : 's'} total`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

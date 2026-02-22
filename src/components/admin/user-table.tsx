@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ArrowUpDown,
   ArrowUp,
@@ -98,8 +98,8 @@ export function UserTable({
   const hasPrev = page > 1
   const hasNext = page < totalPages
 
-  const debouncedSearch = useCallback(
-    debounce((v: string) => onSearchChange?.(v), 300),
+  const debouncedSearch = useMemo(
+    () => debounce((v: string) => onSearchChange?.(v), 300),
     [onSearchChange]
   )
 

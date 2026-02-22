@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { Search, Bot, MessageSquare, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -42,15 +42,15 @@ export function DashboardSearchBar({
       if (isControlled && controlledOnChange) {
         controlledOnChange(val)
       } else {
-        setInternalInput(val)
+        queueMicrotask(() => setInternalInput(val))
       }
     } else if (!isControlled) {
-      setInternalInput('')
+      queueMicrotask(() => setInternalInput(''))
     }
   }, [isAgentsPage, isSessionsPage, urlSearch])
 
-  const debouncedSetQuery = useCallback(
-    debounce((v: string) => setDebouncedQuery(v), 300),
+  const debouncedSetQuery = useMemo(
+    () => debounce((v: string) => setDebouncedQuery(v), 300),
     []
   )
 
