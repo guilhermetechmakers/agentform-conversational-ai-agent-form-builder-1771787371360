@@ -82,6 +82,12 @@ export interface AgentDetailResponse {
     options?: string[]
   }>
   persona?: { name?: string; instructions?: string; tone?: string }
+  prompt_template?: {
+    persona_block?: string
+    grounding_context?: string
+    field_extraction_instructions?: string
+    greeting_template?: string
+  }
   contextual_docs?: Array<{ id: string; type: string; content?: string }>
   publish_settings?: {
     url_token?: string
@@ -132,6 +138,18 @@ export async function updatePersona(
     `/agents/${agentId}/persona`,
     body
   )
+}
+
+export async function updatePromptTemplate(
+  agentId: string,
+  body: {
+    persona_block?: string
+    grounding_context?: string
+    field_extraction_instructions?: string
+    greeting_template?: string
+  }
+): Promise<void> {
+  return apiPut<void>(`/agents/${agentId}/prompt-template`, body)
 }
 
 export async function addContextualDoc(

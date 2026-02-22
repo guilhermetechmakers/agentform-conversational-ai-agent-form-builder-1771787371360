@@ -181,6 +181,18 @@ export function SessionsListPage() {
         onSelectionChange={setSelectedIds}
         onExport={handleExport}
         onReplayWebhook={handleReplayWebhook}
+        hasActiveFilters={
+          !!(
+            debouncedSearch ||
+            filters.agent_id ||
+            filters.status !== 'all' ||
+            filters.tag ||
+            filters.date_from ||
+            filters.date_to ||
+            filters.field_name ||
+            filters.field_value
+          )
+        }
       />
     </div>
   )

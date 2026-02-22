@@ -184,7 +184,68 @@ export function SessionDetailPane({
   }
 
   return (
-    <Card>
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 animate-fade-in">
+      {/* Left column: metadata */}
+      <aside className="space-y-4 order-2 lg:order-1">
+        <Card className="transition-all duration-200 hover:shadow-card-hover border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Session info</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div>
+              <p className="font-medium text-muted-foreground">Agent</p>
+              <p className="mt-0.5">{session.agent_name}</p>
+            </div>
+            <div>
+              <p className="font-medium text-muted-foreground">Status</p>
+              <Badge
+                variant={
+                  session.status === 'completed' ? 'success' : 'secondary'
+                }
+                className="mt-1"
+              >
+                {session.status}
+              </Badge>
+            </div>
+            <div>
+              <p className="font-medium text-muted-foreground">Created</p>
+              <p className="mt-0.5">{formatTimestamp(session.created_at)}</p>
+            </div>
+            {session.visitor_identifier && (
+              <div>
+                <p className="font-medium text-muted-foreground">Visitor</p>
+                <p className="mt-0.5 truncate">{session.visitor_identifier}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {Object.keys(session.metadata || {}).length > 0 && (
+          <Card className="transition-all duration-200 hover:shadow-card-hover border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Metadata</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {session.metadata?.ip && (
+                <div>
+                  <p className="font-medium text-muted-foreground">IP</p>
+                  <p className="mt-0.5 break-all">{session.metadata.ip}</p>
+                </div>
+              )}
+              {session.metadata?.referrer && (
+                <div>
+                  <p className="font-medium text-muted-foreground">Referrer</p>
+                  <p className="mt-0.5 break-all truncate" title={session.metadata.referrer}>
+                    {session.metadata.referrer}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </aside>
+
+      {/* Right column: main content */}
+      <Card className="order-1 lg:order-2">
       <CardHeader>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -291,10 +352,10 @@ export function SessionDetailPane({
                   <div
                     key={msg.message_id ?? i}
                     className={cn(
-                      'flex gap-3 p-3 rounded-lg',
+                      'flex gap-3 p-3 rounded-lg transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
                       msg.sender === 'user'
-                        ? 'bg-primary/10 ml-8'
-                        : 'bg-muted/50 mr-8'
+                        ? 'bg-[rgb(var(--chat-user))]/80 ml-8 border border-border/40'
+                        : 'bg-[rgb(var(--chat-agent))]/80 mr-8 border border-border/40'
                     )}
                   >
                     <div className="flex-1 min-w-0">
@@ -468,5 +529,6 @@ export function SessionDetailPane({
         </div>
       </CardContent>
     </Card>
+    </div>
   )
 }

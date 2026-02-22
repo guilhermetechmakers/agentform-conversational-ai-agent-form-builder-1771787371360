@@ -7,6 +7,57 @@ import type {
   BulkActionRequest,
 } from '@/types/sessions'
 
+/** LLM Orchestration API - Create session (POST /api/sessions) */
+export interface CreateSessionRequest {
+  agentId: string
+}
+
+export interface CreateSessionResponse {
+  sessionId: string
+  status: 'active'
+}
+
+export async function createSession(
+  body: CreateSessionRequest
+): Promise<CreateSessionResponse> {
+  return apiPost<CreateSessionResponse>('/sessions', body)
+}
+
+/** Get session messages (GET /api/sessions/:sessionId/messages) */
+export interface SessionMessagesResponse {
+  messages: Array<{
+    role: 'user' | 'assistant'
+    content: string
+    timestamp?: string
+  }>
+}
+
+export async function getSessionMessages(
+  sessionId: string
+): Promise<SessionMessagesResponse> {
+  return apiGet<SessionMessagesResponse>(`/sessions/${sessionId}/messages`)
+}
+
+/** Send message (POST /api/sessions/:sessionId/message) */
+export interface SendSessionMessageRequest {
+  content: string
+}
+
+export interface SendSessionMessageResponse {
+  status: 'success'
+  nextPrompt?: string
+}
+
+export async function sendSessionMessage(
+  sessionId: string,
+  body: SendSessionMessageRequest
+): Promise<SendSessionMessageResponse> {
+  return apiPost<SendSessionMessageResponse>(
+    `/sessions/${sessionId}/message`,
+    body
+  )
+}
+
 export async function fetchSessions(
   params?: SessionsListParams
 ): Promise<SessionsListResponse> {

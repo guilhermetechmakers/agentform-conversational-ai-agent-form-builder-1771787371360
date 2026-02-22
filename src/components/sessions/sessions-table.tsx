@@ -7,6 +7,7 @@ import {
   MessageSquare,
   ChevronLeft,
   ChevronRight,
+  Bot,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,8 @@ interface SessionsTableProps {
   onReplayWebhook?: (id: string) => void
   onAssign?: (id: string) => void
   onTag?: (id: string) => void
+  /** When true, show "create agent" CTA in empty state */
+  hasActiveFilters?: boolean
 }
 
 function formatDate(iso: string): string {
@@ -72,6 +75,7 @@ export function SessionsTable({
   onReplayWebhook,
   onAssign,
   onTag,
+  hasActiveFilters = false,
 }: SessionsTableProps) {
   const totalPages = Math.ceil(total / pageSize) || 1
   const hasPrev = page > 1
@@ -124,20 +128,33 @@ export function SessionsTable({
   )
 
   if (sessions.length === 0 && !isLoading) {
+    const noSessionsYet = !hasActiveFilters
     return (
-      <Card>
+      <Card className="transition-all duration-200 hover:shadow-card-hover border-border">
         <CardHeader>
           <CardTitle>All Sessions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <MessageSquare className="h-8 w-8 text-muted-foreground" />
+            <div className="h-20 w-20 rounded-2xl bg-muted flex items-center justify-center mb-4 transition-all duration-200 hover:shadow-card">
+              <MessageSquare className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold">No sessions match your filters</h3>
+            <h3 className="text-lg font-semibold">
+              {noSessionsYet ? 'No sessions yet' : 'No sessions match your filters'}
+            </h3>
             <p className="text-muted-foreground mt-1 max-w-sm">
-              Try adjusting your search or filters to find what you&apos;re looking for.
+              {noSessionsYet
+                ? 'Create an agent and share its public link to start collecting conversations. Sessions will appear here once visitors complete forms.'
+                : 'Try adjusting your search or filters to find what you\'re looking for.'}
             </p>
+            {noSessionsYet ? (
+              <Button asChild className="mt-6 transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                <Link to="/dashboard/agents/new">
+                  <Bot className="h-4 w-4 mr-2" />
+                  Create your first agent
+                </Link>
+              </Button>
+            ) : null}
           </div>
         </CardContent>
       </Card>

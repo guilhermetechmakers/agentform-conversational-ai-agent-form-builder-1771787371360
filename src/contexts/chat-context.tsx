@@ -21,6 +21,9 @@ export interface MessageWithId extends Omit<PublicChatMessage, 'message_id'> {
   id: string
 }
 
+/** Default retry limit for field validation failures */
+const DEFAULT_VALIDATION_RETRY_LIMIT = 3
+
 interface ChatContextValue {
   agent: PublicAgent | null
   session: PublicSession | null
@@ -31,6 +34,10 @@ interface ChatContextValue {
   isSessionLoading: boolean
   isSending: boolean
   error: string | null
+  /** True when last error was a validation failure (user can retry by sending again) */
+  isValidationError: boolean
+  /** Remaining validation retries for current field (when applicable) */
+  validationRetriesLeft: number
   hasEnded: boolean
   initializeAgent: (urlToken: string) => Promise<void>
   startSession: () => Promise<void>
@@ -71,6 +78,8 @@ export function ChatProvider({
   const [isSessionLoading, setIsSessionLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isValidationError, setIsValidationError] = useState(false)
+  const [validationRetriesLeft, setValidationRetriesLeft] = useState(DEFAULT_VALIDATION_RETRY_LIMIT)
   const [hasEnded, setHasEnded] = useState(false)
 
   const initializeAgent = useCallback(async (token: string) => {
@@ -136,11 +145,13 @@ export function ChatProvider({
       setSuggestions([])
       setIsSending(true)
       setError(null)
+      setIsValidationError(false)
 
       try {
         const res = await publicChatApi.sendMessage(session.session_id, content)
         if (res.collected_fields?.length) {
           setCollectedFields((prev) => [...prev, ...res.collected_fields!])
+          setValidationRetriesLeft(DEFAULT_VALIDATION_RETRY_LIMIT)
         }
         for (const m of res.messages ?? []) {
           setMessages((prev) => [
@@ -160,6 +171,14 @@ export function ChatProvider({
       } catch (err) {
         const e = err as ApiError
         const msg = e?.message ?? 'Failed to send message'
+        const isValidation = msg.toLowerCase().includes('invalid') ||
+          msg.toLowerCase().includes('validation') ||
+          msg.toLowerCase().includes('format') ||
+          e?.code === 'VALIDATION_ERROR'
+        setIsValidationError(isValidation)
+        if (isValidation) {
+          setValidationRetriesLeft((prev) => Math.max(0, prev - 1))
+        }
         setError(msg)
         toast.error(msg)
       } finally {
@@ -186,12 +205,17 @@ export function ChatProvider({
 
   const retry = useCallback(() => {
     setError(null)
+    setIsValidationError(false)
+    setValidationRetriesLeft(DEFAULT_VALIDATION_RETRY_LIMIT)
     if (agent && !session) {
       startSession()
     }
   }, [agent, session, startSession])
 
-  const clearError = useCallback(() => setError(null), [])
+  const clearError = useCallback(() => {
+    setError(null)
+    setIsValidationError(false)
+  }, [])
 
   const downloadTranscript = useCallback(() => {
     publicChatApi.downloadTranscript(
@@ -228,6 +252,8 @@ export function ChatProvider({
       isSessionLoading,
       isSending,
       error,
+      isValidationError,
+      validationRetriesLeft,
       hasEnded,
       initializeAgent,
       startSession,
@@ -247,6 +273,8 @@ export function ChatProvider({
       isSessionLoading,
       isSending,
       error,
+      isValidationError,
+      validationRetriesLeft,
       hasEnded,
       initializeAgent,
       startSession,

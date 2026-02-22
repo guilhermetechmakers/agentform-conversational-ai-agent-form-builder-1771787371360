@@ -34,10 +34,10 @@ export function MessageList({
           >
             <div
               className={cn(
-                'max-w-[80%] rounded-[12px] px-4 py-2.5 shadow-card transition-all duration-200 hover:shadow-card-hover',
+                'max-w-[80%] rounded-[12px] px-4 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]',
                 msg.sender === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-card border border-border'
+                  ? 'bg-[rgb(var(--chat-user))] text-foreground'
+                  : 'bg-[rgb(var(--chat-agent))] border border-border/60'
               )}
             >
               <p className="text-sm leading-relaxed">{msg.content}</p>
@@ -45,8 +45,8 @@ export function MessageList({
                 className={cn(
                   'text-xs mt-1.5',
                   msg.sender === 'user'
-                    ? 'text-primary-foreground/80'
-                    : 'text-[#687076]'
+                    ? 'text-foreground/70'
+                    : 'text-muted-foreground'
                 )}
               >
                 {new Date(msg.timestamp).toLocaleTimeString([], {

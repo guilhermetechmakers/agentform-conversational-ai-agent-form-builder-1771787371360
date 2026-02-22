@@ -8,6 +8,7 @@ import {
   Trash2,
   MessageSquare,
   FileText,
+  FileCode2,
   Settings,
   Play,
   ChevronLeft,
@@ -32,11 +33,17 @@ import {
   AgentSidebar,
   FieldsDesigner,
   PersonaToneEditor,
+  PromptTemplateEditor,
   ContextualDocsUploader,
   TestConsole,
   PublishSettings,
 } from '@/components/agent-builder'
-import type { AgentMetaState, PersonaState, PublishSettingsState } from '@/components/agent-builder'
+import type {
+  AgentMetaState,
+  PersonaState,
+  PromptTemplateState,
+  PublishSettingsState,
+} from '@/components/agent-builder'
 import type { ContextualDoc } from '@/components/agent-builder'
 import type { AgentField, ConditionalRule } from '@/types'
 import * as agentsApi from '@/api/agents'
@@ -46,6 +53,7 @@ const SIDEBAR_SECTIONS = [
   { id: 'meta', label: 'Agent meta', icon: Bot },
   { id: 'fields', label: 'Fields', icon: MessageSquare },
   { id: 'persona', label: 'Persona & tone', icon: Bot },
+  { id: 'prompt', label: 'Prompt templates', icon: FileCode2 },
   { id: 'docs', label: 'Contextual docs', icon: FileText },
   { id: 'test', label: 'Test console', icon: Play },
   { id: 'publish', label: 'Publish settings', icon: Settings },
@@ -131,6 +139,17 @@ function mapApiToContextualDocs(res: AgentDetailResponse): ContextualDoc[] {
   }))
 }
 
+function mapApiToPromptTemplate(res: AgentDetailResponse): PromptTemplateState {
+  const pt = res.prompt_template
+  if (!pt) return {}
+  return {
+    personaBlock: pt.persona_block,
+    groundingContext: pt.grounding_context,
+    fieldExtractionInstructions: pt.field_extraction_instructions,
+    greetingTemplate: pt.greeting_template,
+  }
+}
+
 export function AgentBuilderPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -155,6 +174,7 @@ export function AgentBuilderPage() {
     tone: 'friendly',
   })
   const [docs, setDocs] = useState<ContextualDoc[]>([])
+  const [promptTemplate, setPromptTemplate] = useState<PromptTemplateState>({})
   const [publishSettings, setPublishSettings] = useState<PublishSettingsState>({})
 
   const loadAgent = useCallback(async (agentId: string) => {
@@ -164,6 +184,7 @@ export function AgentBuilderPage() {
       setMeta(mapApiToMeta(res))
       setFields(mapApiToFields(res))
       setPersona(mapApiToPersona(res))
+      setPromptTemplate(mapApiToPromptTemplate(res))
       setDocs(mapApiToContextualDocs(res))
       setPublishSettings(mapApiToPublishSettings(res))
     } catch {
@@ -209,6 +230,12 @@ export function AgentBuilderPage() {
         instructions: persona.instructions,
         tone: persona.tone,
       })
+      await agentsApi.updatePromptTemplate(id, {
+        persona_block: promptTemplate.personaBlock,
+        grounding_context: promptTemplate.groundingContext,
+        field_extraction_instructions: promptTemplate.fieldExtractionInstructions,
+        greeting_template: promptTemplate.greetingTemplate,
+      })
       await agentsApi.updatePublishSettings(id, {
         url_token: publishSettings.url_token,
         expiry: publishSettings.expiry,
@@ -222,7 +249,7 @@ export function AgentBuilderPage() {
     } finally {
       setIsSaving(false)
     }
-  }, [id, isNew, meta, fields, persona, publishSettings])
+  }, [id, isNew, meta, fields, persona, promptTemplate, publishSettings])
 
   useEffect(() => {
     if (isNew || !id) return
@@ -230,7 +257,7 @@ export function AgentBuilderPage() {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
     }
-  }, [id, isNew, meta, fields, persona, publishSettings, performSave])
+  }, [id, isNew, meta, fields, persona, promptTemplate, publishSettings, performSave])
 
   const handleSave = async () => {
     if (!meta.name.trim()) {
@@ -274,6 +301,12 @@ export function AgentBuilderPage() {
           instructions: persona.instructions,
           tone: persona.tone,
         })
+        await agentsApi.updatePromptTemplate(agentId, {
+          persona_block: promptTemplate.personaBlock,
+          grounding_context: promptTemplate.groundingContext,
+          field_extraction_instructions: promptTemplate.fieldExtractionInstructions,
+          greeting_template: promptTemplate.greetingTemplate,
+        })
         await agentsApi.updatePublishSettings(agentId, {
           url_token: publishSettings.url_token,
           expiry: publishSettings.expiry,
@@ -310,6 +343,12 @@ export function AgentBuilderPage() {
           name: persona.name,
           instructions: persona.instructions,
           tone: persona.tone,
+        })
+        await agentsApi.updatePromptTemplate(id, {
+          persona_block: promptTemplate.personaBlock,
+          grounding_context: promptTemplate.groundingContext,
+          field_extraction_instructions: promptTemplate.fieldExtractionInstructions,
+          greeting_template: promptTemplate.greetingTemplate,
         })
         await agentsApi.updatePublishSettings(id, {
           url_token: publishSettings.url_token,
@@ -521,6 +560,12 @@ export function AgentBuilderPage() {
             <PersonaToneEditor
               persona={persona}
               onChange={(u) => setPersona((p) => ({ ...p, ...u }))}
+            />
+          )}
+          {activeSection === 'prompt' && (
+            <PromptTemplateEditor
+              template={promptTemplate}
+              onChange={(u) => setPromptTemplate((t) => ({ ...t, ...u }))}
             />
           )}
           {activeSection === 'docs' && (

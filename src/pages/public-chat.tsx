@@ -65,6 +65,18 @@ function PublicChatContent() {
       <ChatHeader
         agent={agent}
         status={session?.status ?? (hasEnded ? 'completed' : 'live')}
+        sessionControls={
+          session && (
+            <SessionControls
+              onEndSession={endSession}
+              onDownloadTranscript={downloadTranscript}
+              onRequestHuman={() => toast.info('Your request has been submitted. We will contact you shortly.')}
+              disabled={isSending}
+              hasEnded={hasEnded}
+              variant="compact"
+            />
+          )
+        }
       />
 
       {error && !session && (
@@ -111,6 +123,7 @@ function PublicChatContent() {
                 onRequestHuman={() => toast.info('Your request has been submitted. We will contact you shortly.')}
                 disabled={isSending}
                 hasEnded={hasEnded}
+                variant="full"
               />
             </>
           )}

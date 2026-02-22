@@ -23,6 +23,9 @@
     --input: 237 237 237;
     --ring: 230 244 255;
     --destructive: 255 90 95;
+    /* Chat message bubbles per spec */
+    --chat-user: 213 245 227; /* mint green */
+    --chat-agent: 230 244 255; /* sky blue */
   }
 
   * {

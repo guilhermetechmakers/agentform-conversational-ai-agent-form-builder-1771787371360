@@ -8,10 +8,12 @@ import type { PublicAgent, SessionStatus } from '@/types/public-chat'
 interface ChatHeaderProps {
   agent: PublicAgent | null
   status: SessionStatus
+  /** Session control actions to show in top nav bar */
+  sessionControls?: React.ReactNode
   className?: string
 }
 
-export function ChatHeader({ agent, status, className }: ChatHeaderProps) {
+export function ChatHeader({ agent, status, sessionControls, className }: ChatHeaderProps) {
   const isLive = status === 'live'
 
   return (
@@ -39,6 +41,7 @@ export function ChatHeader({ agent, status, className }: ChatHeaderProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {sessionControls}
           <Badge
             variant={isLive ? 'warning' : 'secondary'}
             className={cn(
