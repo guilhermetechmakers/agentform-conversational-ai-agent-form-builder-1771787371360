@@ -245,7 +245,7 @@ export function ProfileSection() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Last Name</p>
-                      <p className="font-medium">{data.last_name ?? displayName.split(' ').slice(1).join(' ') || '-'}</p>
+                      <p className="font-medium">{data.last_name ?? (displayName.split(' ').slice(1).join(' ') || '-')}</p>
                     </div>
                   </div>
                   <div>

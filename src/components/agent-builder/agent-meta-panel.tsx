@@ -13,7 +13,12 @@ export interface AgentMetaState {
   name: string
   description: string
   avatar_url?: string
-  appearance?: { primary?: string; background?: string }
+  appearance?: {
+    primary?: string
+    background?: string
+    text?: string
+    accent?: string
+  }
   status: 'draft' | 'published' | 'unpublished'
   url_token?: string
 }
@@ -27,6 +32,8 @@ interface AgentMetaPanelProps {
 const PRESET_COLORS = [
   { name: 'Primary', key: 'primary' as const, default: '#FFE066' },
   { name: 'Background', key: 'background' as const, default: '#F7F8FA' },
+  { name: 'Text', key: 'text' as const, default: '#191A1D' },
+  { name: 'Accent', key: 'accent' as const, default: '#E6F4FF' },
 ]
 
 export function AgentMetaPanel({

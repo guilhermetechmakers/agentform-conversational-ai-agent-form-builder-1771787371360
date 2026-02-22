@@ -45,7 +45,12 @@ export interface AgentBuilderPayload {
   name: string
   description?: string
   avatar_url?: string
-  appearance?: { primary?: string; background?: string }
+  appearance?: {
+    primary?: string
+    background?: string
+    text?: string
+    accent?: string
+  }
   status?: 'draft' | 'published' | 'unpublished'
 }
 
@@ -54,7 +59,12 @@ export interface AgentDetailResponse {
   name: string
   description?: string
   avatar_url?: string
-  appearance?: { primary?: string; background?: string }
+  appearance?: {
+    primary?: string
+    background?: string
+    text?: string
+    accent?: string
+  }
   status: 'draft' | 'published' | 'unpublished'
   url_token?: string
   created_at: string
@@ -63,10 +73,13 @@ export interface AgentDetailResponse {
     id?: string
     type: string
     label: string
-    validation_rules?: Record<string, unknown>
+    placeholder?: string
+    default_value?: string
+    validation_rules?: Record<string, unknown> & { regex?: string }
     order: number
-    conditional_logic?: unknown
+    conditional_logic?: Array<{ fieldId: string; operator: string; value?: string }>
     required?: boolean
+    options?: string[]
   }>
   persona?: { name?: string; instructions?: string; tone?: string }
   contextual_docs?: Array<{ id: string; type: string; content?: string }>
@@ -96,10 +109,13 @@ export async function upsertFields(
     id?: string
     type: string
     label: string
-    validation_rules?: Record<string, unknown>
+    placeholder?: string
+    default_value?: string
+    validation_rules?: Record<string, unknown> & { regex?: string }
     order: number
-    conditional_logic?: unknown
+    conditional_logic?: Array<{ fieldId: string; operator: string; value?: string }>
     required?: boolean
+    options?: string[]
   }>
 ): Promise<{ fields: AgentDetailResponse['fields'] }> {
   return apiPut<{ fields: AgentDetailResponse['fields'] }>(
@@ -139,4 +155,20 @@ export async function updatePublishSettings(
     `/agents/${agentId}/publish-settings`,
     body
   )
+}
+
+export interface SimulateRequest {
+  initial_input?: string
+  context?: Record<string, unknown>
+}
+
+export interface SimulateResponse {
+  conversation_log: Array<{ role: 'user' | 'assistant'; content: string }>
+}
+
+export async function simulateAgent(
+  agentId: string,
+  body: SimulateRequest
+): Promise<SimulateResponse> {
+  return apiPost<SimulateResponse>(`/agents/${agentId}/simulate`, body)
 }

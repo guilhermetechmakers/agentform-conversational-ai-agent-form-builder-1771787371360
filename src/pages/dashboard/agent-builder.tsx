@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Bot,
@@ -11,10 +11,11 @@ import {
   Settings,
   Play,
   ChevronLeft,
+  Check,
+  Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -24,9 +25,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { cn } from '@/lib/utils'
 import {
   AgentMetaPanel,
+  AgentSidebar,
   FieldsDesigner,
   PersonaToneEditor,
   ContextualDocsUploader,
@@ -35,7 +38,7 @@ import {
 } from '@/components/agent-builder'
 import type { AgentMetaState, PersonaState, PublishSettingsState } from '@/components/agent-builder'
 import type { ContextualDoc } from '@/components/agent-builder'
-import type { AgentField } from '@/types'
+import type { AgentField, ConditionalRule } from '@/types'
 import * as agentsApi from '@/api/agents'
 import type { AgentDetailResponse } from '@/api/agents'
 
@@ -61,6 +64,26 @@ function mapApiToMeta(res: AgentDetailResponse): AgentMetaState {
   }
 }
 
+const VALID_OPERATORS: ConditionalRule['operator'][] = [
+  'equals',
+  'not_equals',
+  'contains',
+  'empty',
+]
+
+function mapConditionalRules(
+  raw?: Array<{ fieldId: string; operator: string; value?: string }>
+): ConditionalRule[] | undefined {
+  if (!raw?.length) return undefined
+  return raw.map((r) => ({
+    fieldId: r.fieldId,
+    operator: VALID_OPERATORS.includes(r.operator as ConditionalRule['operator'])
+      ? (r.operator as ConditionalRule['operator'])
+      : 'equals',
+    value: r.value,
+  }))
+}
+
 function mapApiToFields(res: AgentDetailResponse): AgentField[] {
   const raw = res.fields ?? []
   return raw
@@ -69,10 +92,13 @@ function mapApiToFields(res: AgentDetailResponse): AgentField[] {
       id: f.id ?? crypto.randomUUID(),
       type: (f.type as AgentField['type']) ?? 'text',
       label: f.label ?? '',
+      placeholder: f.placeholder,
+      default_value: f.default_value,
       validations: f.validation_rules,
       required: f.required,
-      conditionalRules: f.conditional_logic,
+      conditionalRules: mapConditionalRules(f.conditional_logic),
       order: f.order ?? 0,
+      options: f.options,
     }))
 }
 
@@ -114,6 +140,8 @@ export function AgentBuilderPage() {
   const [isLoading, setIsLoading] = useState(!isNew)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [meta, setMeta] = useState<AgentMetaState>({
     name: '',
@@ -150,6 +178,60 @@ export function AgentBuilderPage() {
     if (!isNew && id) loadAgent(id)
   }, [isNew, id, loadAgent])
 
+  const performSave = useCallback(async () => {
+    if (!id || isNew || !meta.name.trim()) return
+    setIsSaving(true)
+    try {
+      await agentsApi.updateAgent(id, {
+        name: meta.name.trim(),
+        description: meta.description,
+        avatar_url: meta.avatar_url,
+        appearance: meta.appearance,
+        status: meta.status,
+      })
+      await agentsApi.upsertFields(
+        id,
+        fields.map((f, i) => ({
+          id: f.id,
+          type: f.type,
+          label: f.label,
+          placeholder: f.placeholder,
+          default_value: f.default_value,
+          validation_rules: f.validations,
+          order: i,
+          conditional_logic: f.conditionalRules,
+          required: f.required,
+          options: f.options,
+        }))
+      )
+      await agentsApi.updatePersona(id, {
+        name: persona.name,
+        instructions: persona.instructions,
+        tone: persona.tone,
+      })
+      await agentsApi.updatePublishSettings(id, {
+        url_token: publishSettings.url_token,
+        expiry: publishSettings.expiry,
+        password: publishSettings.password,
+        webhook_url: publishSettings.webhook_url,
+        webhook_headers: publishSettings.webhook_headers,
+      })
+      setLastSavedAt(new Date())
+    } catch {
+      toast.error('Autosave failed')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [id, isNew, meta, fields, persona, publishSettings])
+
+  useEffect(() => {
+    if (isNew || !id) return
+    saveTimeoutRef.current = setTimeout(performSave, 2000)
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    }
+  }, [id, isNew, meta, fields, persona, publishSettings, performSave])
+
   const handleSave = async () => {
     if (!meta.name.trim()) {
       toast.error('Please enter an agent name')
@@ -171,18 +253,21 @@ export function AgentBuilderPage() {
           status: meta.status,
         })
         if (fields.length > 0) {
-          await agentsApi.upsertFields(
-            agentId,
-            fields.map((f, i) => ({
-              id: f.id,
-              type: f.type,
-              label: f.label,
-              validation_rules: f.validations,
-              order: i,
-              conditional_logic: f.conditionalRules,
-              required: f.required,
-            }))
-          )
+        await agentsApi.upsertFields(
+          agentId,
+          fields.map((f, i) => ({
+            id: f.id,
+            type: f.type,
+            label: f.label,
+            placeholder: f.placeholder,
+            default_value: f.default_value,
+            validation_rules: f.validations,
+            order: i,
+            conditional_logic: f.conditionalRules,
+            required: f.required,
+            options: f.options,
+          }))
+        )
         }
         await agentsApi.updatePersona(agentId, {
           name: persona.name,
@@ -212,10 +297,13 @@ export function AgentBuilderPage() {
             id: f.id,
             type: f.type,
             label: f.label,
+            placeholder: f.placeholder,
+            default_value: f.default_value,
             validation_rules: f.validations,
             order: i,
             conditional_logic: f.conditionalRules,
             required: f.required,
+            options: f.options,
           }))
         )
         await agentsApi.updatePersona(id, {
@@ -231,6 +319,7 @@ export function AgentBuilderPage() {
           webhook_headers: publishSettings.webhook_headers,
         })
         toast.success('Agent saved')
+        setLastSavedAt(new Date())
       }
     } catch {
       toast.error('Failed to save agent')
@@ -292,29 +381,57 @@ export function AgentBuilderPage() {
     )
   }
 
+  const breadcrumbItems = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Agents Overview', href: '/dashboard/agents' },
+    { label: isNew ? 'Create Agent' : meta.name || 'Edit Agent' },
+  ]
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/dashboard/agents')}
-            aria-label="Back to agents"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">
-              {isNew ? 'Create Agent' : 'Edit Agent'}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Define fields, persona, and publish settings
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
+    <div className="flex h-[calc(100vh-4rem)] animate-fade-in">
+      <AgentSidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex flex-col gap-4 p-4 border-b border-border bg-card shrink-0">
+          <Breadcrumb items={breadcrumbItems} />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/dashboard/agents')}
+                aria-label="Back to agents"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">
+                  {isNew ? 'Create Agent' : 'Edit Agent'}
+                </h1>
+                <p className="text-muted-foreground mt-1">
+                  Define fields, persona, and publish settings
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {!isNew && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : lastSavedAt ? (
+                    <>
+                      <Check className="h-4 w-4 text-green-600" />
+                      <span>
+                        Saved {lastSavedAt.toLocaleTimeString()}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
             variant="outline"
             onClick={handleSave}
             disabled={isSaving}
@@ -358,14 +475,15 @@ export function AgentBuilderPage() {
               </Button>
             </>
           )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar navigation */}
-        <aside className="lg:col-span-1">
-          <Card className="sticky top-24 bg-card">
-            <ScrollArea className="h-[calc(100vh-8rem)]">
+        <div className="flex flex-1 min-h-0">
+          {/* Section navigation */}
+          <aside className="w-56 shrink-0 border-r border-border bg-card hidden lg:block">
+            <ScrollArea className="h-full">
               <nav className="p-3 space-y-1">
                 {SIDEBAR_SECTIONS.map(({ id, label, icon: Icon }) => (
                   <button
@@ -385,11 +503,10 @@ export function AgentBuilderPage() {
                 ))}
               </nav>
             </ScrollArea>
-          </Card>
-        </aside>
+          </aside>
 
-        {/* Main content */}
-        <main className="lg:col-span-3 space-y-6">
+          {/* Main content */}
+          <main className="flex-1 overflow-auto p-6 space-y-6">
           {activeSection === 'meta' && (
             <AgentMetaPanel
               meta={meta}
@@ -426,6 +543,7 @@ export function AgentBuilderPage() {
             />
           )}
         </main>
+        </div>
       </div>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

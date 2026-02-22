@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
-import { UserTable } from '@/components/admin'
-import { fetchUsers, updateUser } from '@/api/admin'
+import { UserTable, UserViewDialog, DeleteUserDialog } from '@/components/admin'
+import { fetchUsers, updateUser, deleteUser } from '@/api/admin'
 import type { AdminUser, UserRole, UserStatus } from '@/types/admin'
 import { toast } from 'sonner'
 
@@ -18,6 +18,11 @@ export function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [viewUser, setViewUser] = useState<AdminUser | null>(null)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const loadUsers = useCallback(() => {
     setIsLoading(true)
@@ -75,18 +80,37 @@ export function AdminUsersPage() {
     [loadUsers]
   )
 
-  const handleDeleteUser = useCallback(
-    (id: string) => {
-      if (!confirm('Are you sure you want to delete this user?')) return
-      toast.info('Delete user – implement with API when available')
+  const handleViewUser = useCallback((user: AdminUser) => {
+    setViewUser(user)
+    setViewDialogOpen(true)
+  }, [])
+
+  const handleDeleteUser = useCallback((id: string) => {
+    const user = users.find((u) => u.user_id === id)
+    setDeleteTarget(user ?? null)
+    setDeleteDialogOpen(true)
+  }, [users])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      await deleteUser(deleteTarget.user_id)
+      toast.success('User deleted successfully')
+      setDeleteDialogOpen(false)
+      setDeleteTarget(null)
       setSelectedIds((prev) => {
         const next = new Set(prev)
-        next.delete(id)
+        next.delete(deleteTarget.user_id)
         return next
       })
-    },
-    []
-  )
+      loadUsers()
+    } catch {
+      toast.error('Failed to delete user')
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteTarget, loadUsers])
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -115,12 +139,27 @@ export function AdminUsersPage() {
         onSelectionChange={setSelectedIds}
         onUpdateUser={handleUpdateUser}
         onDeleteUser={handleDeleteUser}
+        onViewUser={handleViewUser}
         search={search}
         onSearchChange={setSearch}
         roleFilter={roleFilter}
         onRoleFilterChange={setRoleFilter}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+      />
+
+      <UserViewDialog
+        user={viewUser}
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+      />
+
+      <DeleteUserDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        userName={deleteTarget?.username ?? deleteTarget?.email}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
     </div>
   )

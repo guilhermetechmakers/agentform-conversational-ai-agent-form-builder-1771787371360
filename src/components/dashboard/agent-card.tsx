@@ -96,8 +96,8 @@ export function AgentCard({
             </div>
           </Link>
           <div className="flex shrink-0 items-center gap-1">
-            <span className="text-xs text-muted-foreground">
-              {formatDate(agent.created_at)}
+            <span className="text-xs text-muted-foreground" title={`Modified ${new Date(agent.updated_at).toLocaleString()}`}>
+              Modified {formatDate(agent.updated_at)}
             </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

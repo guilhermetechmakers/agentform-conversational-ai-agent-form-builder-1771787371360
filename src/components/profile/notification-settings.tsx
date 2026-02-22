@@ -12,7 +12,7 @@ export interface NotificationSettingsProps {
   preferences: NotificationPreferences | null
   isLoading: boolean
   onFetch: () => void
-  onUpdate: (data: Partial<NotificationPreferences>) => Promise<void>
+  onUpdate: (data: Partial<NotificationPreferences>) => Promise<NotificationPreferences | void>
 }
 
 export function NotificationSettings({

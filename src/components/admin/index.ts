@@ -1,5 +1,7 @@
 export { MetricsCard } from './metrics-card'
 export { UserTable } from './user-table'
+export { UserViewDialog } from './user-view-dialog'
+export { DeleteUserDialog } from './delete-user-dialog'
 export { AgentList } from './agent-list'
 export { LogsViewer } from './logs-viewer'
 export { BillingOverview } from './billing-overview'

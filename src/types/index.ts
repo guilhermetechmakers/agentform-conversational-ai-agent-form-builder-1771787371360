@@ -10,13 +10,21 @@ export interface User {
   updatedAt: string
 }
 
+export interface ConditionalRule {
+  fieldId: string
+  operator: 'equals' | 'not_equals' | 'contains' | 'empty'
+  value?: string
+}
+
 export interface AgentField {
   id: string
   type: 'text' | 'email' | 'phone' | 'number' | 'date' | 'select' | 'multiselect' | 'textarea'
   label: string
-  validations?: Record<string, unknown>
+  placeholder?: string
+  default_value?: string
+  validations?: Record<string, unknown> & { regex?: string }
   required?: boolean
-  conditionalRules?: unknown
+  conditionalRules?: ConditionalRule[]
   order: number
   options?: string[]
 }
