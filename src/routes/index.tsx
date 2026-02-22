@@ -18,6 +18,7 @@ import { SettingsLayout } from '@/pages/dashboard/settings/settings-layout'
 import { ProfileSection } from '@/pages/dashboard/settings/profile-section'
 import { TeamSection } from '@/pages/dashboard/settings/team-section'
 import { BillingSection } from '@/pages/dashboard/settings/billing-section'
+import { NotificationsSection } from '@/pages/dashboard/settings/notifications-section'
 import { APIWebhooksSection } from '@/pages/dashboard/settings/api-webhooks-section'
 import { SecuritySection } from '@/pages/dashboard/settings/security-section'
 import { DataPrivacySection } from '@/pages/dashboard/settings/data-privacy-section'
@@ -101,6 +102,7 @@ export const router = createBrowserRouter([
               { path: 'profile', element: <ProfileSection /> },
               { path: 'team', element: <TeamSection /> },
               { path: 'billing', element: <BillingSection /> },
+              { path: 'notifications', element: <NotificationsSection /> },
               { path: 'api-webhooks', element: <APIWebhooksSection /> },
               { path: 'security', element: <SecuritySection /> },
               { path: 'data-privacy', element: <DataPrivacySection /> },

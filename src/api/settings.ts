@@ -40,7 +40,17 @@ export async function fetchNotificationPreferences(): Promise<NotificationPrefer
 }
 
 export async function updateNotificationPreferences(
-  data: Partial<Pick<NotificationPreferences, 'email_notifications' | 'sms_notifications' | 'push_notifications'>>
+  data: Partial<
+    Pick<
+      NotificationPreferences,
+      | 'email_notifications'
+      | 'sms_notifications'
+      | 'push_notifications'
+      | 'session_completed_email'
+      | 'webhook_failure_email'
+      | 'billing_alerts_email'
+    >
+  >
 ): Promise<NotificationPreferences> {
   return apiPut<NotificationPreferences>('/user/preferences', data)
 }

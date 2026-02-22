@@ -41,6 +41,9 @@ const MOCK_PREFERENCES: NotificationPreferences = {
   email_notifications: true,
   sms_notifications: false,
   push_notifications: false,
+  session_completed_email: true,
+  webhook_failure_email: true,
+  billing_alerts_email: true,
 }
 
 const MOCK_TEAM: TeamMember[] = [

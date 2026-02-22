@@ -16,6 +16,12 @@ export interface NotificationPreferences {
   email_notifications: boolean
   sms_notifications: boolean
   push_notifications: boolean
+  /** Session completed email alerts */
+  session_completed_email?: boolean
+  /** Webhook failure email alerts */
+  webhook_failure_email?: boolean
+  /** Billing and payment email alerts */
+  billing_alerts_email?: boolean
 }
 
 export type TeamRole = 'Owner' | 'Admin' | 'Member'

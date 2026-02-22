@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Mail, MessageSquare, Bell } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Mail, MessageSquare, Bell, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -29,7 +30,14 @@ export function NotificationSettings({
   }, [preferences])
 
   const handleToggle = useCallback(
-    async (key: keyof Pick<NotificationPreferences, 'email_notifications' | 'sms_notifications' | 'push_notifications'>) => {
+    async (
+      key: keyof Pick<
+        NotificationPreferences,
+        | 'email_notifications'
+        | 'sms_notifications'
+        | 'push_notifications'
+      >
+    ) => {
       const current = localPrefs ?? preferences
       if (!current) return
       const next = { ...current, [key]: !current[key] }
@@ -140,6 +148,14 @@ export function NotificationSettings({
             onCheckedChange={() => handleToggle('push_notifications')}
             disabled={isSaving}
           />
+        </div>
+        <div className="pt-4 border-t border-border">
+          <Button asChild variant="outline" size="sm" className="transition-transform hover:scale-[1.02]">
+            <Link to="/dashboard/settings/notifications">
+              Manage email alerts (sessions, webhooks, billing)
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>

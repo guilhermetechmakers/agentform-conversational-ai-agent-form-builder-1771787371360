@@ -12,6 +12,7 @@ import {
   ReplayModal,
   FilterPanelSidebar,
   StatusFilterChips,
+  SessionNotificationsCard,
   DEFAULT_SESSIONS_FILTERS,
 } from '@/components/sessions'
 import { WebhookLogsTable } from '@/components/webhooks'
@@ -421,6 +422,8 @@ export function SessionsListPage() {
               sessionIds={exportSessionIds}
               onExport={handleExport}
             />
+
+            <SessionNotificationsCard />
 
             {replaySessionId && (
               <ReplayModal
