@@ -84,6 +84,10 @@ export default {
           '0%': { opacity: '1', transform: 'scale(1)' },
           '100%': { opacity: '0', transform: 'scale(0.95)' },
         },
+        'typing-dot': {
+          '0%, 60%, 100%': { opacity: '0.7', transform: 'scale(0.95)' },
+          '30%': { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out forwards',
@@ -93,6 +97,7 @@ export default {
         'shake': 'shake 0.5s ease-in-out',
         'in': 'fade-in-0 0.2s ease-out, zoom-in-95 0.2s ease-out',
         'out': 'fade-out-0 0.2s ease-in, zoom-out-95 0.2s ease-in',
+        'typing-dot': 'typing-dot 1.4s ease-in-out infinite',
       },
     },
   },
