@@ -10,7 +10,13 @@ import { AgentsListPage } from '@/pages/dashboard/agents-list'
 import { AgentBuilderPage } from '@/pages/dashboard/agent-builder'
 import { SessionsListPage } from '@/pages/dashboard/sessions-list'
 import { SessionDetailPage } from '@/pages/dashboard/session-detail'
-import { SettingsPage } from '@/pages/dashboard/settings'
+import { SettingsLayout } from '@/pages/dashboard/settings/settings-layout'
+import { ProfileSection } from '@/pages/dashboard/settings/profile-section'
+import { TeamSection } from '@/pages/dashboard/settings/team-section'
+import { BillingSection } from '@/pages/dashboard/settings/billing-section'
+import { APIWebhooksSection } from '@/pages/dashboard/settings/api-webhooks-section'
+import { SecuritySection } from '@/pages/dashboard/settings/security-section'
+import { DataPrivacySection } from '@/pages/dashboard/settings/data-privacy-section'
 import { PublicChatPage } from '@/pages/public-chat'
 import { HelpPage } from '@/pages/help'
 import { PrivacyPolicyPage } from '@/pages/legal/privacy'
@@ -46,7 +52,19 @@ export const router = createBrowserRouter([
       { path: 'agents/:id', element: <AgentBuilderPage /> },
       { path: 'sessions', element: <SessionsListPage /> },
       { path: 'sessions/:id', element: <SessionDetailPage /> },
-      { path: 'settings', element: <SettingsPage /> },
+      {
+        path: 'settings',
+        element: <SettingsLayout />,
+        children: [
+          { index: true, element: <Navigate to="/dashboard/settings/profile" replace /> },
+          { path: 'profile', element: <ProfileSection /> },
+          { path: 'team', element: <TeamSection /> },
+          { path: 'billing', element: <BillingSection /> },
+          { path: 'api-webhooks', element: <APIWebhooksSection /> },
+          { path: 'security', element: <SecuritySection /> },
+          { path: 'data-privacy', element: <DataPrivacySection /> },
+        ],
+      },
     ],
   },
   { path: '/a/:publicId', element: <PublicChatPage /> },

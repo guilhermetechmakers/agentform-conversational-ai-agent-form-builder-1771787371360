@@ -255,7 +255,7 @@ export function DashboardLayout() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/dashboard/settings#billing">
+                <Link to="/dashboard/settings/billing">
                   <CreditCard className="mr-2 h-4 w-4" />
                   Billing
                 </Link>
