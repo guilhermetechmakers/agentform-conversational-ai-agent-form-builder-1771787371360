@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
 import { LandingPage } from '@/pages/landing'
+import { PricingPage } from '@/pages/pricing'
 import { LoginSignupPage } from '@/pages/auth/login-signup'
 import { PasswordResetPage } from '@/pages/auth/password-reset'
 import { EmailVerificationPage } from '@/pages/auth/email-verification'
@@ -26,6 +27,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
+  { path: '/pricing', element: <PricingPage /> },
   { path: '/login', element: <LoginSignupPage /> },
   { path: '/password-reset', element: <PasswordResetPage /> },
   { path: '/verify-email', element: <EmailVerificationPage /> },

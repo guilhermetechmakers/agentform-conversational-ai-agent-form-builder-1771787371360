@@ -71,6 +71,25 @@
   @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
 }
 
+/* Landing page CTA styles per spec: #FFE066 accent, white text, hover brightness +10% */
+.cta-primary {
+  background-color: #FFE066;
+  color: white;
+  @apply rounded-lg px-8 py-6 text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
+}
+.cta-primary:hover {
+  filter: brightness(1.1);
+}
+.cta-secondary {
+  background-color: transparent;
+  color: #FFE066;
+  border: 2px solid transparent;
+  @apply rounded-lg px-8 py-6 text-base font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
+}
+.cta-secondary:hover {
+  border-color: #FFE066;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
