@@ -64,3 +64,33 @@ export async function updatePassword(
 ): Promise<{ message: string }> {
   return apiPost<{ message: string }>('/auth/password-update', data)
 }
+
+export interface VerifyEmailRequest {
+  token: string
+}
+
+export interface VerifyEmailResponse {
+  success: boolean
+  message: string
+}
+
+export interface ResendVerificationRequest {
+  email: string
+}
+
+export interface ResendVerificationResponse {
+  success: boolean
+  message: string
+}
+
+export async function verifyEmail(
+  data: VerifyEmailRequest
+): Promise<VerifyEmailResponse> {
+  return apiPost<VerifyEmailResponse>('/auth/verify-email', data)
+}
+
+export async function resendVerification(
+  data: ResendVerificationRequest
+): Promise<ResendVerificationResponse> {
+  return apiPost<ResendVerificationResponse>('/auth/resend-verification', data)
+}
