@@ -34,9 +34,14 @@ export interface BillingInfo {
   id: string
   user_id: string
   current_plan: string
+  plan_id?: string
+  price_per_month?: number
+  renewal_date?: string
   usage_metrics: {
     sessions_used?: number
     sessions_limit?: number
+    tokens_used?: number
+    tokens_limit?: number
     storage_used_mb?: number
     storage_limit_mb?: number
   }
@@ -52,6 +57,15 @@ export interface BillingInfo {
     currency: string
     status: string
     created_at: string
+    invoice_url?: string
+    pdf_url?: string
+  }>
+  plans?: Array<{
+    id: string
+    name: string
+    quota_sessions: number
+    quota_tokens: number
+    price_per_month: number
   }>
 }
 
