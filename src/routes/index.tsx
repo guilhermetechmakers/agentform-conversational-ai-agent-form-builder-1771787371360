@@ -9,6 +9,7 @@ import { DashboardOverviewPage } from '@/pages/dashboard/overview'
 import { AgentsListPage } from '@/pages/dashboard/agents-list'
 import { AgentBuilderPage } from '@/pages/dashboard/agent-builder'
 import { SessionsListPage } from '@/pages/dashboard/sessions-list'
+import { SessionDetailPage } from '@/pages/dashboard/session-detail'
 import { SettingsPage } from '@/pages/dashboard/settings'
 import { PublicChatPage } from '@/pages/public-chat'
 import { HelpPage } from '@/pages/help'
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       { path: 'agents/new', element: <AgentBuilderPage /> },
       { path: 'agents/:id', element: <AgentBuilderPage /> },
       { path: 'sessions', element: <SessionsListPage /> },
+      { path: 'sessions/:id', element: <SessionDetailPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],
   },
