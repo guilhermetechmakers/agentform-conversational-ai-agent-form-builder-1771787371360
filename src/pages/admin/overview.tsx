@@ -149,6 +149,15 @@ export function AdminOverviewPage() {
             Webhook logs, errors, and security alerts
           </p>
         </Link>
+        <Link
+          to="/admin/sso"
+          className="block p-6 rounded-xl border border-[#EDEDED] bg-[#FFFFFF] transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <h3 className="font-semibold text-[#191A1D]">SSO Settings</h3>
+          <p className="text-sm text-[#687076] mt-1">
+            Configure SAML and OIDC for enterprise login
+          </p>
+        </Link>
       </div>
     </div>
   )

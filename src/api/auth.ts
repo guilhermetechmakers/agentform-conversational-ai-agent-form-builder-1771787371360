@@ -65,10 +65,6 @@ function getAccessToken(res: LoginResponse | SignupResponse): string | undefined
   return res.accessToken ?? (res as LoginResponse).token
 }
 
-function getRefreshToken(res: LoginResponse | SignupResponse): string | undefined {
-  return res.refreshToken
-}
-
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const res = await apiPost<LoginResponse>('/auth/login', data)
   return {

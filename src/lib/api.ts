@@ -15,12 +15,6 @@ function getAccessToken(): string | null {
   )
 }
 
-function getRefreshToken(): string | null {
-  return (
-    localStorage.getItem(REFRESH_TOKEN_KEY) ?? sessionStorage.getItem(REFRESH_TOKEN_KEY)
-  )
-}
-
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const token = getAccessToken()
   const headers: Record<string, string> = {

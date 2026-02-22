@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
 
-  React.useEffect(() => {
+  const rehydrate = React.useCallback(() => {
     const token =
       localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY)
     if (token) {
@@ -53,9 +53,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
+    } else {
+      setUser(null)
     }
-    setIsLoading(false)
   }, [])
+
+  React.useEffect(() => {
+    rehydrate()
+    setIsLoading(false)
+  }, [rehydrate])
+
+  React.useEffect(() => {
+    const onStorage = () => rehydrate()
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('auth-tokens-stored', onStorage)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('auth-tokens-stored', onStorage)
+    }
+  }, [rehydrate])
 
   const login = React.useCallback(
     async (email: string, password: string, rememberMe = false) => {

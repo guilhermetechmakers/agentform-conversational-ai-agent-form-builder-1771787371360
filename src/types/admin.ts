@@ -50,3 +50,14 @@ export interface PaginatedResponse<T> {
   page: number
   pageSize: number
 }
+
+export type SSOType = 'SAML' | 'OIDC'
+
+export interface AdminSSOSetting {
+  id: string
+  enterprise_name: string
+  sso_type: SSOType
+  metadata_url: string
+  created_at: string
+  updated_at: string
+}

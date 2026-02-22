@@ -1,6 +1,8 @@
 import {
   apiGet,
+  apiPost,
   apiPut,
+  apiDelete,
   type ApiError,
 } from '@/lib/api'
 import type {
@@ -9,6 +11,7 @@ import type {
   AdminAgent,
   AdminLog,
   AdminBilling,
+  AdminSSOSetting,
   PaginatedResponse,
 } from '@/types/admin'
 
@@ -208,4 +211,36 @@ export async function fetchBilling(): Promise<AdminBilling[]> {
     }
     throw err
   }
+}
+
+export async function fetchSSOSettings(): Promise<AdminSSOSetting[]> {
+  try {
+    const res = await apiGet<AdminSSOSetting[]>(`${ADMIN_BASE}/sso-settings`)
+    return res
+  } catch (err) {
+    const apiErr = err as ApiError & { status?: number }
+    if (apiErr?.status === 404 || apiErr?.message?.includes('fetch')) {
+      return []
+    }
+    throw err
+  }
+}
+
+export async function createSSOSetting(body: {
+  enterprise_name: string
+  sso_type: 'SAML' | 'OIDC'
+  metadata_url: string
+}): Promise<AdminSSOSetting> {
+  return apiPost<AdminSSOSetting>(`${ADMIN_BASE}/sso-settings`, body)
+}
+
+export async function updateSSOSetting(
+  id: string,
+  body: Partial<{ enterprise_name: string; sso_type: 'SAML' | 'OIDC'; metadata_url: string }>
+): Promise<AdminSSOSetting> {
+  return apiPut<AdminSSOSetting>(`${ADMIN_BASE}/sso-settings/${id}`, body)
+}
+
+export async function deleteSSOSetting(id: string): Promise<void> {
+  await apiDelete(`${ADMIN_BASE}/sso-settings/${id}`)
 }

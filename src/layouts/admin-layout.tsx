@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Menu,
   Shield,
+  KeyRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/admin/agents', icon: Bot, label: 'Agents' },
   { to: '/admin/logs', icon: FileText, label: 'Logs' },
   { to: '/admin/billing', icon: CreditCard, label: 'Billing' },
+  { to: '/admin/sso', icon: KeyRound, label: 'SSO Settings' },
 ]
 
 function getSidebarState(): boolean {

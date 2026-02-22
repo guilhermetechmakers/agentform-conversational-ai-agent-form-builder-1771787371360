@@ -27,7 +27,6 @@ import { AlertMessage } from '@/components/auth/alert-message'
 import { OAuthButton } from '@/components/auth/oauth-button'
 import { SSOButton } from '@/components/auth/sso-button'
 import { useAuth } from '@/contexts/auth-context'
-import { initiateOAuth } from '@/api/auth'
 import { cn } from '@/lib/utils'
 
 const PASSWORD_MIN_LENGTH = 8
@@ -70,7 +69,7 @@ export function LoginSignupPage() {
   const [showVerificationMessage, setShowVerificationMessage] = useState(false)
   const [verificationEmail, setVerificationEmail] = useState('')
   const navigate = useNavigate()
-  const { login, signup } = useAuth()
+  const { login, signup, initiateOAuth, initiateSSO } = useAuth()
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -126,9 +125,18 @@ export function LoginSignupPage() {
     initiateOAuth(provider)
   }
 
-  const handleEnterpriseLogin = () => {
-    const apiBase = import.meta.env.VITE_API_URL ?? '/api'
-    window.location.href = `${apiBase}/auth/sso`
+  const handleEnterpriseLogin = async () => {
+    setFormError(null)
+    setIsSubmitting(true)
+    try {
+      await initiateSSO()
+    } catch {
+      const message = 'Enterprise login is not configured. Contact your administrator.'
+      setFormError(message)
+      toast.error(message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleModeSwitch = () => {
@@ -331,7 +339,25 @@ export function LoginSignupPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <TooltipProvider delayDuration={400}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label="Password requirements"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px]">
+                        <p>{PASSWORD_REQUIREMENTS}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <PasswordInput
                   id="signup-password"
                   placeholder="••••••••"
@@ -340,6 +366,18 @@ export function LoginSignupPage() {
                     signupForm.formState.errors.password && 'animate-shake'
                   )}
                   {...signupForm.register('password')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                <PasswordInput
+                  id="signup-confirm-password"
+                  placeholder="••••••••"
+                  error={signupForm.formState.errors.confirmPassword?.message}
+                  className={cn(
+                    signupForm.formState.errors.confirmPassword && 'animate-shake'
+                  )}
+                  {...signupForm.register('confirmPassword')}
                 />
               </div>
               <div className="flex items-start gap-2">
@@ -382,7 +420,7 @@ export function LoginSignupPage() {
               )}
               <Button
                 type="submit"
-                className="w-full h-11"
+                className="w-full h-11 auth-primary"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -391,7 +429,7 @@ export function LoginSignupPage() {
                     Creating account...
                   </>
                 ) : (
-                  'Create account'
+                  'Sign up'
                 )}
               </Button>
             </form>
@@ -419,30 +457,58 @@ export function LoginSignupPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <OAuthButton
-              provider="google"
-              onClick={() => handleOAuth('google')}
-              disabled={isSubmitting}
-            />
-            <OAuthButton
-              provider="microsoft"
-              onClick={() => handleOAuth('microsoft')}
-              disabled={isSubmitting}
-            />
-            <OAuthButton
-              provider="github"
-              onClick={() => handleOAuth('github')}
-              disabled={isSubmitting}
-            />
-          </div>
+          <TooltipProvider delayDuration={400}>
+            <div className="grid grid-cols-3 gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <OAuthButton
+                      provider="google"
+                      onClick={() => handleOAuth('google')}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sign in with your Google account</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <OAuthButton
+                      provider="microsoft"
+                      onClick={() => handleOAuth('microsoft')}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sign in with your Microsoft account</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <OAuthButton
+                      provider="github"
+                      onClick={() => handleOAuth('github')}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sign in with your GitHub account</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
 
-          <p className="text-center text-xs text-muted-foreground pt-2">
-            Enterprise SSO?{' '}
-            <Link to="/help" className="text-primary hover:underline">
-              Contact us
-            </Link>
-          </p>
+          <SSOButton
+            onClick={handleEnterpriseLogin}
+            disabled={isSubmitting}
+            className="mt-2"
+          />
         </CardContent>
       </Card>
     </div>

@@ -6,6 +6,7 @@ import { PricingPage } from '@/pages/pricing'
 import { LoginSignupPage } from '@/pages/auth/login-signup'
 import { PasswordResetPage } from '@/pages/auth/password-reset'
 import { EmailVerificationPage } from '@/pages/auth/email-verification'
+import { AuthCallbackPage } from '@/pages/auth/auth-callback'
 import { DashboardOverviewPage } from '@/pages/dashboard/overview'
 import { AgentsListPage } from '@/pages/dashboard/agents-list'
 import { AgentBuilderPage } from '@/pages/dashboard/agent-builder'
@@ -37,13 +38,25 @@ import {
   AdminAgentsPage,
   AdminLogsPage,
   AdminBillingPage,
+  AdminSSOSettingsPage,
 } from '@/pages/admin'
+import { useAuth } from '@/contexts/auth-context'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem('access_token')
-  if (!token) {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
+
   return <>{children}</>
 }
 
@@ -60,6 +73,7 @@ export const router = createBrowserRouter([
       { index: true, element: <LandingPage /> },
       { path: 'pricing', element: <PricingPage /> },
       { path: 'login', element: <LoginSignupPage /> },
+      { path: 'auth/callback', element: <AuthCallbackPage /> },
       { path: 'password-reset', element: <PasswordResetPage /> },
       { path: 'verify-email', element: <EmailVerificationPage /> },
       {
@@ -105,6 +119,7 @@ export const router = createBrowserRouter([
           { path: 'agents', element: <AdminAgentsPage /> },
           { path: 'logs', element: <AdminLogsPage /> },
           { path: 'billing', element: <AdminBillingPage /> },
+          { path: 'sso', element: <AdminSSOSettingsPage /> },
         ],
       },
       { path: 'a/:publicId', element: <PublicChatPage /> },
