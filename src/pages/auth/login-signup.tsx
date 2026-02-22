@@ -3,21 +3,44 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Bot } from 'lucide-react'
+import { Bot, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { PasswordInput } from '@/components/auth/password-input'
+import { AlertMessage } from '@/components/auth/alert-message'
+import { OAuthButton } from '@/components/auth/oauth-button'
 import { useAuth } from '@/contexts/auth-context'
+import { cn } from '@/lib/utils'
+
+const PASSWORD_MIN_LENGTH = 8
+const passwordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+  .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
+  .regex(/\d/, 'Password must contain at least one number')
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional(),
 })
 
-const signupSchema = loginSchema.extend({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  acceptTerms: z.boolean().refine((v) => v === true, 'You must accept the terms'),
+const signupSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: passwordSchema,
+  acceptTerms: z.boolean().refine((v) => v === true, {
+    message: 'You must accept the Terms of Service and Privacy Policy',
+  }),
 })
 
 type LoginForm = z.infer<typeof loginSchema>
@@ -26,71 +49,187 @@ type SignupForm = z.infer<typeof signupSchema>
 export function LoginSignupPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState('')
   const navigate = useNavigate()
   const { login, signup } = useAuth()
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', rememberMe: false },
   })
 
   const signupForm = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { email: '', password: '', name: '', acceptTerms: false },
+    defaultValues: { email: '', password: '', acceptTerms: false },
   })
 
   const onLogin = async (data: LoginForm) => {
+    setFormError(null)
     setIsSubmitting(true)
     try {
-      await login(data.email, data.password)
+      await login(data.email, data.password, data.rememberMe ?? false)
+      toast.success('Welcome back!')
       navigate('/dashboard')
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Invalid email or password'
+      setFormError(message)
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const onSignup = async (data: SignupForm) => {
+    setFormError(null)
     setIsSubmitting(true)
     try {
-      await signup(data.email, data.password, data.name)
-      navigate('/dashboard')
+      const result = await signup(data.email, data.password, data.acceptTerms)
+      if (result.needsVerification) {
+        setVerificationEmail(data.email)
+        setShowVerificationMessage(true)
+        toast.success('Check your email to verify your account')
+      } else {
+        toast.success('Account created successfully')
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      setFormError(message)
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const handleOAuth = (provider: 'google' | 'microsoft' | 'github') => {
+    toast.info(`${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in coming soon`)
+  }
+
+  const handleModeSwitch = () => {
+    setMode((m) => (m === 'login' ? 'signup' : 'login'))
+    setFormError(null)
+    loginForm.clearErrors()
+    signupForm.clearErrors()
+  }
+
+  if (showVerificationMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F8FA] p-6">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-primary/20 blur-3xl animate-pulse-soft" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-secondary/30 blur-3xl animate-pulse-soft" />
+        </div>
+        <Card className="w-full max-w-md relative animate-fade-in-up shadow-card">
+          <CardHeader className="space-y-1 text-center">
+            <Link to="/" className="flex justify-center gap-2 mb-4">
+              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
+                <Bot className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <span className="font-bold text-xl text-[#191A1D]">AgentForm</span>
+            </Link>
+            <CardTitle className="text-2xl text-[#191A1D]">
+              Check your email
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              We sent a verification link to{' '}
+              <span className="font-medium text-foreground">{verificationEmail}</span>.
+              Click the link to verify your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button asChild className="w-full">
+              <Link to="/verify-email">Go to verification</Link>
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVerificationMessage(false)
+                  setVerificationEmail('')
+                }}
+                className="text-primary font-medium hover:underline"
+              >
+                Use a different email
+              </button>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#F7F8FA] p-6">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-primary/20 blur-3xl animate-pulse-soft" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-secondary/30 blur-3xl animate-pulse-soft" />
       </div>
-      <Card className="w-full max-w-md relative animate-fade-in-up">
-        <CardHeader className="space-y-1 text-center">
+      <Card className="w-full max-w-md relative animate-fade-in-up shadow-card">
+        <CardHeader className="space-y-1 text-center pb-4">
           <Link to="/" className="flex justify-center gap-2 mb-4">
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
               <Bot className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="font-bold text-xl">AgentForm</span>
+            <span className="font-bold text-xl text-[#191A1D]">AgentForm</span>
           </Link>
-          <CardTitle className="text-2xl">
+          <div className="flex rounded-lg bg-muted/50 p-1">
+            <button
+              type="button"
+              onClick={() => mode !== 'login' && handleModeSwitch()}
+              className={cn(
+                'flex-1 py-2.5 text-sm font-medium rounded-md transition-all duration-200',
+                mode === 'login'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => mode !== 'signup' && handleModeSwitch()}
+              className={cn(
+                'flex-1 py-2.5 text-sm font-medium rounded-md transition-all duration-200',
+                mode === 'signup'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Sign up
+            </button>
+          </div>
+          <CardTitle className="text-2xl text-[#191A1D] pt-2">
             {mode === 'login' ? 'Welcome back' : 'Create an account'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-muted-foreground">
             {mode === 'login'
               ? 'Enter your credentials to access your dashboard'
               : 'Get started with conversational form builders'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {formError && (
+            <AlertMessage variant="error" message={formError} className="animate-in" />
+          )}
+
           {mode === 'login' ? (
-            <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+            <form
+              onSubmit={loginForm.handleSubmit(onLogin)}
+              className="space-y-4"
+            >
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="login-email">Email</Label>
                 <Input
-                  id="email"
+                  id="login-email"
                   type="email"
                   placeholder="you@example.com"
+                  className={cn(
+                    loginForm.formState.errors.email && 'animate-shake border-destructive'
+                  )}
                   {...loginForm.register('email')}
                 />
                 {loginForm.formState.errors.email && (
@@ -101,50 +240,66 @@ export function LoginSignupPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="login-password">Password</Label>
                   <Link
                     to="/password-reset"
-                    className="text-sm text-muted-foreground hover:text-primary"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
                     Forgot password?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
+                <PasswordInput
+                  id="login-password"
+                  placeholder="••••••••"
+                  error={loginForm.formState.errors.password?.message}
                   {...loginForm.register('password')}
                 />
-                {loginForm.formState.errors.password && (
-                  <p className="text-sm text-destructive">
-                    {loginForm.formState.errors.password.message}
-                  </p>
-                )}
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Signing in...' : 'Sign in'}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={loginForm.watch('rememberMe')}
+                  onCheckedChange={(checked) =>
+                    loginForm.setValue('rememberMe', checked === true)
+                  }
+                />
+                <Label
+                  htmlFor="rememberMe"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Remember me
+                </Label>
+              </div>
+              <Button
+                type="submit"
+                className="w-full h-11"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign in'
+                )}
               </Button>
             </form>
           ) : (
-            <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Your name"
-                  {...signupForm.register('name')}
-                />
-                {signupForm.formState.errors.name && (
-                  <p className="text-sm text-destructive">
-                    {signupForm.formState.errors.name.message}
-                  </p>
-                )}
-              </div>
+            <form
+              onSubmit={signupForm.handleSubmit(onSignup)}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="signup-email">Email</Label>
                 <Input
                   id="signup-email"
                   type="email"
                   placeholder="you@example.com"
+                  className={cn(
+                    signupForm.formState.errors.email &&
+                      'animate-shake border-destructive'
+                  )}
                   {...signupForm.register('email')}
                 />
                 {signupForm.formState.errors.email && (
@@ -155,56 +310,83 @@ export function LoginSignupPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password">Password</Label>
-                <Input
+                <PasswordInput
                   id="signup-password"
-                  type="password"
+                  placeholder="••••••••"
+                  error={signupForm.formState.errors.password?.message}
+                  className={cn(
+                    signupForm.formState.errors.password && 'animate-shake'
+                  )}
                   {...signupForm.register('password')}
                 />
-                {signupForm.formState.errors.password && (
-                  <p className="text-sm text-destructive">
-                    {signupForm.formState.errors.password.message}
-                  </p>
-                )}
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+              <div className="flex items-start gap-2">
+                <Checkbox
                   id="acceptTerms"
-                  {...signupForm.register('acceptTerms')}
-                  className="rounded border-input"
+                  checked={signupForm.watch('acceptTerms')}
+                  onCheckedChange={(checked) =>
+                    signupForm.setValue('acceptTerms', checked === true)
+                  }
+                  className="mt-0.5"
                 />
-                <Label htmlFor="acceptTerms" className="text-sm font-normal">
+                <Label
+                  htmlFor="acceptTerms"
+                  className="text-sm font-normal cursor-pointer leading-relaxed"
+                >
                   I agree to the{' '}
-                  <Link to="/terms" className="text-primary hover:underline">
+                  <Link
+                    to="/terms"
+                    className="text-primary hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link to="/privacy" className="text-primary hover:underline">
+                  <Link
+                    to="/privacy"
+                    className="text-primary hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Privacy Policy
                   </Link>
                 </Label>
               </div>
               {signupForm.formState.errors.acceptTerms && (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-destructive -mt-2">
                   {signupForm.formState.errors.acceptTerms.message}
                 </p>
               )}
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating account...' : 'Create account'}
+              <Button
+                type="submit"
+                className="w-full h-11"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  'Create account'
+                )}
               </Button>
             </form>
           )}
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+
+          <p className="text-center text-sm text-muted-foreground pt-2">
             {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
             <button
               type="button"
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+              onClick={handleModeSwitch}
               className="text-primary font-medium hover:underline"
             >
               {mode === 'login' ? 'Sign up' : 'Sign in'}
             </button>
           </p>
-          <div className="relative my-6">
+
+          <div className="relative py-4">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
@@ -214,18 +396,26 @@ export function LoginSignupPage() {
               </span>
             </div>
           </div>
+
           <div className="grid grid-cols-3 gap-2">
-            <Button variant="outline" type="button" disabled>
-              Google
-            </Button>
-            <Button variant="outline" type="button" disabled>
-              Microsoft
-            </Button>
-            <Button variant="outline" type="button" disabled>
-              GitHub
-            </Button>
+            <OAuthButton
+              provider="google"
+              onClick={() => handleOAuth('google')}
+              disabled={isSubmitting}
+            />
+            <OAuthButton
+              provider="microsoft"
+              onClick={() => handleOAuth('microsoft')}
+              disabled={isSubmitting}
+            />
+            <OAuthButton
+              provider="github"
+              onClick={() => handleOAuth('github')}
+              disabled={isSubmitting}
+            />
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
+
+          <p className="text-center text-xs text-muted-foreground pt-2">
             Enterprise SSO?{' '}
             <Link to="/help" className="text-primary hover:underline">
               Contact us

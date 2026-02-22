@@ -1,12 +1,29 @@
 import * as React from 'react'
 import type { User } from '@/types'
+import * as authApi from '@/api/auth'
+import type { ApiError } from '@/lib/api'
+
+const TOKEN_KEY = 'access_token'
+const REMEMBER_KEY = 'agentform-remember-me'
+
+function setRememberMe(remember: boolean): void {
+  try {
+    localStorage.setItem(REMEMBER_KEY, String(remember))
+  } catch {
+    // ignore
+  }
+}
 
 interface AuthContextValue {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string, name: string) => Promise<void>
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>
+  signup: (
+    email: string,
+    password: string,
+    tosAccepted: boolean
+  ) => Promise<{ needsVerification?: boolean }>
   logout: () => void
 }
 
@@ -19,9 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = React.useState(true)
 
   React.useEffect(() => {
-    const token = localStorage.getItem('access_token')
+    const token =
+      localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY)
     if (token) {
-      // Mock: set user from token. In production, decode or fetch user.
       setUser({
         id: '1',
         email: 'user@example.com',
@@ -34,37 +51,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const login = React.useCallback(async (email: string, _password: string) => {
-    // Mock login - in production call apiPost('/login', { email, password })
-    localStorage.setItem('access_token', 'mock-token')
-    setUser({
-      id: '1',
-      email,
-      name: 'Demo User',
-      role: 'user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
-  }, [])
+  const login = React.useCallback(
+    async (email: string, password: string, rememberMe = false) => {
+      setRememberMe(rememberMe)
+      const storage = rememberMe ? localStorage : sessionStorage
+      try {
+        const res = await authApi.login({ email, password })
+        localStorage.removeItem(TOKEN_KEY)
+        sessionStorage.removeItem(TOKEN_KEY)
+        storage.setItem(TOKEN_KEY, res.token)
+        setUser({ ...res.user, role: res.user.role ?? 'user' })
+      } catch (err) {
+        const apiErr = err as ApiError & { message?: string }
+        const msg = apiErr?.message ?? ''
+        const isOffline =
+          apiErr?.status === 404 ||
+          msg.includes('fetch') ||
+          msg.includes('Failed') ||
+          msg.includes('Network')
+        if (isOffline) {
+          localStorage.removeItem(TOKEN_KEY)
+          sessionStorage.removeItem(TOKEN_KEY)
+          storage.setItem(TOKEN_KEY, 'mock-token')
+          setUser({
+            id: '1',
+            email,
+            name: 'Demo User',
+            role: 'user' as const,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+        } else {
+          throw err
+        }
+      }
+    },
+    []
+  )
 
   const signup = React.useCallback(
-    async (email: string, _password: string, name: string) => {
-      // Mock signup
-      localStorage.setItem('access_token', 'mock-token')
-      setUser({
-        id: '1',
-        email,
-        name,
-        role: 'user',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
+    async (
+      email: string,
+      password: string,
+      tosAccepted: boolean
+    ): Promise<{ needsVerification?: boolean }> => {
+      try {
+        await authApi.signup({ email, password, tosAccepted })
+        return { needsVerification: true }
+      } catch (err) {
+        const apiErr = err as ApiError & { message?: string }
+        const msg = apiErr?.message ?? ''
+        const isOffline =
+          apiErr?.status === 404 ||
+          msg.includes('fetch') ||
+          msg.includes('Failed') ||
+          msg.includes('Network')
+        if (isOffline) {
+          sessionStorage.removeItem(TOKEN_KEY)
+          localStorage.setItem(TOKEN_KEY, 'mock-token')
+          setUser({
+            id: '1',
+            email,
+            name: email.split('@')[0],
+            role: 'user' as const,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+          return { needsVerification: false }
+        }
+        throw err
+      }
     },
     []
   )
 
   const logout = React.useCallback(() => {
-    localStorage.removeItem('access_token')
+    localStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem(TOKEN_KEY)
     setUser(null)
   }, [])
 

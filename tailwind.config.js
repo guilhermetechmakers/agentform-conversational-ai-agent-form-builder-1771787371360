@@ -63,12 +63,18 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
         },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-4px)' },
+          '20%, 40%, 60%, 80%': { transform: 'translateX(4px)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out forwards',
         'fade-in-up': 'fade-in-up 0.4s ease-out forwards',
         'shimmer': 'shimmer 1.5s ease-in-out infinite',
         'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'shake': 'shake 0.5s ease-in-out',
       },
     },
   },
