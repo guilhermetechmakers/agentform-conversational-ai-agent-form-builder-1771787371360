@@ -13,6 +13,7 @@ export interface PolicySectionData {
   title: string
   subsections?: PolicySubSection[]
   content?: string
+  isNew?: boolean
 }
 
 export const PRIVACY_POLICY_SECTIONS: PolicySectionData[] = [

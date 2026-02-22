@@ -16,7 +16,8 @@ export interface TermsSectionData {
 }
 
 export interface TermsResponse {
-  content: string
+  id?: string
+  content?: string
   effective_date: string
   version: string
   sections?: TermsSectionData[]

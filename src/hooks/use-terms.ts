@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchTerms } from '@/api/terms'
 import {
-  TERMS_SECTIONS,
+  TERMS_OF_SERVICE_SECTIONS,
   TERMS_EFFECTIVE_DATE,
   TERMS_VERSION,
 } from '@/lib/terms-content'
@@ -17,7 +17,7 @@ export interface TermsState {
 }
 
 export function useTerms(): TermsState {
-  const [sections, setSections] = useState<TermsSectionData[]>(TERMS_SECTIONS)
+  const [sections, setSections] = useState<TermsSectionData[]>(TERMS_OF_SERVICE_SECTIONS)
   const [effectiveDate, setEffectiveDate] = useState(TERMS_EFFECTIVE_DATE)
   const [version, setVersion] = useState(TERMS_VERSION)
   const [isLoading, setIsLoading] = useState(true)
@@ -39,7 +39,7 @@ export function useTerms(): TermsState {
       }
     } catch {
       setError('Unable to load terms. Showing cached version.')
-      setSections(TERMS_SECTIONS)
+      setSections(TERMS_OF_SERVICE_SECTIONS)
       setEffectiveDate(TERMS_EFFECTIVE_DATE)
       setVersion(TERMS_VERSION)
     } finally {

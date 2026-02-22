@@ -1,2 +1,6 @@
 export { PolicySection } from './policy-section'
 export { PrivacyDownloadButton } from './privacy-download-button'
+export { SectionNavigation } from './section-navigation'
+export { TermsSectionNavigation } from './terms-section-navigation'
+export { TermsSection } from './terms-section'
+export { AcknowledgementLink } from './acknowledgement-link'

@@ -15,15 +15,42 @@ export function SectionNavigation({
   className,
 }: SectionNavigationProps) {
   return (
-    <nav
-      className={cn(
-        'sticky top-24 flex flex-col gap-1',
-        'rounded-xl border border-border bg-card p-4 shadow-card',
-        'transition-all duration-300',
-        className
-      )}
-      aria-label="Terms of Service sections"
-    >
+    <>
+      {/* Mobile: compact select for quick section jump */}
+      <div className="lg:hidden mb-6">
+        <label htmlFor="terms-section-nav" className="sr-only">
+          Jump to section
+        </label>
+        <select
+          id="terms-section-nav"
+          value={activeSectionId ?? ''}
+          onChange={(e) => {
+            const id = e.target.value
+            if (id) onNavigate(id)
+          }}
+          className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          aria-label="Jump to section"
+        >
+          <option value="">Select section...</option>
+          {sections.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.title}
+              {'isNew' in s && s.isNew ? ' (New)' : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Desktop: sticky sidebar */}
+      <nav
+        className={cn(
+          'hidden lg:flex sticky top-24 flex-col gap-1',
+          'rounded-xl border border-border bg-card p-4 shadow-card',
+          'transition-all duration-300',
+          className
+        )}
+        aria-label="Terms of Service sections"
+      >
       <h3 className="text-sm font-semibold text-foreground mb-2 px-2">
         On this page
       </h3>
@@ -53,5 +80,6 @@ export function SectionNavigation({
         })}
       </ul>
     </nav>
+    </>
   )
 }

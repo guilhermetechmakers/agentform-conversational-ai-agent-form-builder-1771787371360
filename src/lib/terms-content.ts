@@ -5,6 +5,8 @@
 
 import type { PolicySectionData } from '@/lib/privacy-content'
 
+export type TermsSectionData = PolicySectionData
+
 export const TERMS_OF_SERVICE_SECTIONS: PolicySectionData[] = [
   {
     id: 'account',
@@ -115,3 +117,6 @@ export const TERMS_OF_SERVICE_SECTIONS: PolicySectionData[] = [
 
 export const TERMS_EFFECTIVE_DATE = 'February 22, 2025'
 export const TERMS_VERSION = '1.0.0'
+
+/** Alias for use-terms hook compatibility */
+export const TERMS_SECTIONS = TERMS_OF_SERVICE_SECTIONS

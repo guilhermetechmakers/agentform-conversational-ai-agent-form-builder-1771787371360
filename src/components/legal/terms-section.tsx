@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import type { PolicySubSection } from '@/lib/privacy-content'
 import type { TermsSectionData } from '@/lib/terms-content'
 
 interface TermsSectionProps {
@@ -29,7 +30,7 @@ export function TermsSection({ section, className }: TermsSectionProps) {
           {section.content}
         </p>
       )}
-      {section.subsections?.map((sub) => {
+      {section.subsections?.map((sub: PolicySubSection) => {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sub.content.trim())
         return (
           <div key={sub.title} className="mb-4">

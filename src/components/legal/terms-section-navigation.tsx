@@ -12,15 +12,46 @@ export function TermsSectionNavigation({
   activeSectionId,
   className,
 }: TermsSectionNavigationProps) {
+  const handleMobileNavChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value
+    if (id) {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
-    <nav
-      className={cn(
-        'sticky top-24 shrink-0 w-48 space-y-1',
-        'hidden lg:block',
-        className
-      )}
-      aria-label="Terms of Service sections"
-    >
+    <>
+      {/* Mobile: compact select */}
+      <div className="lg:hidden mb-6">
+        <label htmlFor="terms-nav-mobile" className="sr-only">
+          Jump to section
+        </label>
+        <select
+          id="terms-nav-mobile"
+          value={activeSectionId ?? ''}
+          onChange={handleMobileNavChange}
+          className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          aria-label="Jump to section"
+        >
+          <option value="">Select section...</option>
+          {sections.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.title}
+              {s.isNew ? ' (New)' : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Desktop: sticky sidebar */}
+      <nav
+        className={cn(
+          'sticky top-24 shrink-0 w-48 space-y-1',
+          'hidden lg:block',
+          className
+        )}
+        aria-label="Terms of Service sections"
+      >
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         On this page
       </p>
@@ -54,5 +85,6 @@ export function TermsSectionNavigation({
         })}
       </ul>
     </nav>
+    </>
   )
 }

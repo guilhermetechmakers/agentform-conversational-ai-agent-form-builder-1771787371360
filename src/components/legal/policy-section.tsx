@@ -15,9 +15,14 @@ export function PolicySection({ section, className }: PolicySectionProps) {
     >
       <h2
         id={`${section.id}-heading`}
-        className="text-xl font-bold text-[#191A1D] mb-4"
+        className="text-xl font-bold text-[#191A1D] mb-4 flex items-center gap-2"
       >
         {section.title}
+        {section.isNew && (
+          <span className="text-xs font-bold uppercase tracking-wide text-[#FFE066] bg-[rgb(255,224,102,0.2)] px-2 py-0.5 rounded">
+            New
+          </span>
+        )}
       </h2>
       {section.content && (
         <p className="text-base font-normal text-[#191A1D] leading-relaxed mb-4">
