@@ -48,6 +48,28 @@
   .animate-in {
     animation: fade-in 0.3s ease-out forwards;
   }
+
+  /* Loading skeleton shimmer effect */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--muted)) 0%,
+      rgb(var(--muted-foreground) / 0.15) 50%,
+      rgb(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+/* Toast styles per spec: Success #E1F8E7, Error #FF5A5F */
+[data-sonner-toast][data-type='success'] {
+  background-color: #E1F8E7 !important;
+  color: #191A1D !important;
+}
+[data-sonner-toast][data-type='error'] {
+  background-color: #FF5A5F !important;
+  color: white !important;
 }
 
 /* Custom scrollbar */

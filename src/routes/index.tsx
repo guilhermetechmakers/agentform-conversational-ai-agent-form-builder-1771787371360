@@ -11,6 +11,7 @@ import { AgentsListPage } from '@/pages/dashboard/agents-list'
 import { AgentBuilderPage } from '@/pages/dashboard/agent-builder'
 import { SessionsListPage } from '@/pages/dashboard/sessions-list'
 import { SessionDetailPage } from '@/pages/dashboard/session-detail'
+import { OperationsPage } from '@/pages/dashboard/operations'
 import { SettingsLayout } from '@/pages/dashboard/settings/settings-layout'
 import { ProfileSection } from '@/pages/dashboard/settings/profile-section'
 import { TeamSection } from '@/pages/dashboard/settings/team-section'
@@ -75,6 +76,7 @@ export const router = createBrowserRouter([
           { path: 'agents/:id', element: <AgentBuilderPage /> },
           { path: 'sessions', element: <SessionsListPage /> },
           { path: 'sessions/:id', element: <SessionDetailPage /> },
+          { path: 'operations', element: <OperationsPage /> },
           {
             path: 'settings',
             element: <SettingsLayout />,
