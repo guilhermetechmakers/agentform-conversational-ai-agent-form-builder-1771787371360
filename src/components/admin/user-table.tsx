@@ -10,6 +10,7 @@ import {
   UserX,
   Trash2,
   Eye,
+  Pencil,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,7 @@ interface UserTableProps {
   onUpdateUser?: (id: string, updates: { status?: UserStatus; role?: UserRole }) => void
   onDeleteUser?: (id: string) => void
   onViewUser?: (user: AdminUser) => void
+  onEditRole?: (user: AdminUser) => void
   search?: string
   onSearchChange?: (value: string) => void
   roleFilter?: string
@@ -83,6 +85,7 @@ export function UserTable({
   onUpdateUser,
   onDeleteUser,
   onViewUser,
+  onEditRole,
   search = '',
   onSearchChange,
   roleFilter = '',
@@ -192,6 +195,9 @@ export function UserTable({
             <SelectContent>
               <SelectItem value="">All roles</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="owner">Owner</SelectItem>
+              <SelectItem value="editor">Editor</SelectItem>
+              <SelectItem value="viewer">Viewer</SelectItem>
               <SelectItem value="user">User</SelectItem>
               <SelectItem value="guest">Guest</SelectItem>
             </SelectContent>
@@ -325,6 +331,12 @@ export function UserTable({
                             <DropdownMenuItem onClick={() => onViewUser(user)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View profile
+                            </DropdownMenuItem>
+                          )}
+                          {onEditRole && (
+                            <DropdownMenuItem onClick={() => onEditRole(user)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit role
                             </DropdownMenuItem>
                           )}
                           {user.status === 'active' ? (

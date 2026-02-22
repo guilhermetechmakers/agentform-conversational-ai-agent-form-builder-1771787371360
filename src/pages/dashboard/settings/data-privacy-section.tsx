@@ -1,8 +1,9 @@
-import { DataPrivacyCard } from '@/components/settings'
+import { DataPrivacyCard, CompliancePolicyCard } from '@/components/settings'
 
 export function DataPrivacySection() {
   return (
-    <div className="animate-fade-in-up">
+    <div className="space-y-8 animate-fade-in-up">
+      <CompliancePolicyCard />
       <DataPrivacyCard />
     </div>
   )

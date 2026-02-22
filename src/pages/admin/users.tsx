@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
-import { UserTable, UserViewDialog, DeleteUserDialog } from '@/components/admin'
-import { fetchUsers, updateUser, deleteUser } from '@/api/admin'
-import type { AdminUser, UserRole, UserStatus } from '@/types/admin'
+import { UserTable, UserViewDialog, DeleteUserDialog, RoleEditModal } from '@/components/admin'
+import { fetchUsers, updateUser, deleteUser, updateUserRole } from '@/api/admin'
+import type { AdminUser, UserRole, UserStatus, RbacRole } from '@/types/admin'
 import { toast } from 'sonner'
 
 type SortKey = 'username' | 'email' | 'role' | 'status' | 'created_at'
@@ -23,6 +23,9 @@ export function AdminUsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [roleEditUser, setRoleEditUser] = useState<AdminUser | null>(null)
+  const [roleEditOpen, setRoleEditOpen] = useState(false)
+  const [isRoleSaving, setIsRoleSaving] = useState(false)
 
   const loadUsers = useCallback(() => {
     setIsLoading(true)
@@ -85,6 +88,37 @@ export function AdminUsersPage() {
     setViewDialogOpen(true)
   }, [])
 
+  const handleEditRole = useCallback((user: AdminUser) => {
+    setRoleEditUser(user)
+    setRoleEditOpen(true)
+  }, [])
+
+  const handleSaveRole = useCallback(
+    async (role: RbacRole) => {
+      if (!roleEditUser) return
+      setIsRoleSaving(true)
+      try {
+        await updateUserRole(roleEditUser.user_id, role)
+        toast.success('Role updated successfully')
+        setRoleEditOpen(false)
+        setRoleEditUser(null)
+        loadUsers()
+      } catch {
+        toast.error('Failed to update role')
+      } finally {
+        setIsRoleSaving(false)
+      }
+    },
+    [roleEditUser, loadUsers]
+  )
+
+  const handleRoleEditClose = useCallback((open: boolean) => {
+    if (!open) {
+      setRoleEditOpen(false)
+      setRoleEditUser(null)
+    }
+  }, [])
+
   const handleDeleteUser = useCallback((id: string) => {
     const user = users.find((u) => u.user_id === id)
     setDeleteTarget(user ?? null)
@@ -140,6 +174,7 @@ export function AdminUsersPage() {
         onUpdateUser={handleUpdateUser}
         onDeleteUser={handleDeleteUser}
         onViewUser={handleViewUser}
+        onEditRole={handleEditRole}
         search={search}
         onSearchChange={setSearch}
         roleFilter={roleFilter}
@@ -160,6 +195,15 @@ export function AdminUsersPage() {
         userName={deleteTarget?.username ?? deleteTarget?.email}
         onConfirm={handleConfirmDelete}
         isDeleting={isDeleting}
+      />
+
+      <RoleEditModal
+        open={roleEditOpen}
+        onOpenChange={handleRoleEditClose}
+        userName={roleEditUser?.username ?? roleEditUser?.email}
+        currentRole={roleEditUser?.role ?? 'viewer'}
+        onSave={handleSaveRole}
+        isLoading={isRoleSaving}
       />
     </div>
   )

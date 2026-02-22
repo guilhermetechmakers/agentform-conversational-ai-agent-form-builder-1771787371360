@@ -41,6 +41,7 @@ import {
   AdminLogsPage,
   AdminBillingPage,
   AdminSSOSettingsPage,
+  AdminSecurityCompliancePage,
 } from '@/pages/admin'
 import { useAuth } from '@/contexts/auth-context'
 
@@ -124,6 +125,7 @@ export const router = createBrowserRouter([
           { path: 'logs', element: <AdminLogsPage /> },
           { path: 'billing', element: <AdminBillingPage /> },
           { path: 'sso', element: <AdminSSOSettingsPage /> },
+          { path: 'security-compliance', element: <AdminSecurityCompliancePage /> },
         ],
       },
       { path: 'a/:publicId', element: <PublicChatPage /> },

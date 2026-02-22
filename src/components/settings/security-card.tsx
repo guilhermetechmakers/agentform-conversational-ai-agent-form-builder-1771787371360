@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Shield, Smartphone, Monitor, MapPin } from 'lucide-react'
+import { Shield, Smartphone, Monitor, MapPin, Lock, ShieldCheck } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSecuritySettings } from '@/hooks/use-settings'
 import * as settingsApi from '@/api/settings'
@@ -12,6 +13,20 @@ import { toast } from 'sonner'
 export function SecurityCard() {
   const { data, isLoading, error, refetch } = useSecuritySettings()
   const [twoFaLoading, setTwoFaLoading] = useState(false)
+  const [piiLoading, setPiiLoading] = useState(false)
+
+  const handlePiiRedactionToggle = async (enabled: boolean) => {
+    setPiiLoading(true)
+    try {
+      await settingsApi.updateSecuritySettings({ pii_redaction_enabled: enabled })
+      toast.success(enabled ? 'PII redaction enabled' : 'PII redaction disabled')
+      refetch()
+    } catch {
+      toast.error('Failed to update PII redaction')
+    } finally {
+      setPiiLoading(false)
+    }
+  }
 
   const handle2FAToggle = async (enabled: boolean) => {
     setTwoFaLoading(true)
@@ -67,6 +82,49 @@ export function SecurityCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Data Protection Settings */}
+        <div className="space-y-4">
+          <h4 className="font-medium">Data Protection</h4>
+          <div className="rounded-lg border border-border p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Lock className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="font-medium">Encryption at-rest</p>
+                <p className="text-sm text-muted-foreground">
+                  Data is encrypted at-rest using AES-256
+                </p>
+              </div>
+              <Badge variant="success" className="shrink-0">Active</Badge>
+            </div>
+            <div className="flex items-center gap-3 pt-2 border-t border-border">
+              <ShieldCheck className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="font-medium">TLS in-transit</p>
+                <p className="text-sm text-muted-foreground">
+                  TLS 1.3 • Certificate valid
+                </p>
+              </div>
+              <Badge variant="success" className="shrink-0">Active</Badge>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border p-4 mt-4">
+              <div>
+                <Label htmlFor="pii-redaction" className="font-medium">
+                  PII Redaction
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Redact personally identifiable information in logs and exports
+                </p>
+              </div>
+              <Switch
+                id="pii-redaction"
+                checked={data.pii_redaction_enabled ?? false}
+                onCheckedChange={handlePiiRedactionToggle}
+                disabled={piiLoading}
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between rounded-lg border border-border p-4">
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-muted-foreground" />

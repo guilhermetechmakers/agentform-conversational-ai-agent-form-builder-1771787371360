@@ -88,6 +88,7 @@ const MOCK_SECURITY: SecuritySettings = {
   id: '1',
   user_id: '1',
   two_fa_enabled: false,
+  pii_redaction_enabled: false,
   session_activity: [
     {
       id: '1',
@@ -104,6 +105,7 @@ const MOCK_DATA_PRIVACY: DataPrivacySettings = {
   id: '1',
   user_id: '1',
   retention_policy_days: 90,
+  data_residency: 'us-east-1',
   export_requests: [],
   deletion_requests: [],
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Download, Trash2 } from 'lucide-react'
+import { Download, Trash2, Globe, Clock } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -13,10 +13,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDataPrivacy } from '@/hooks/use-settings'
 import * as settingsApi from '@/api/settings'
 import { toast } from 'sonner'
+
+const DATA_RESIDENCY_OPTIONS = [
+  { value: 'us-east-1', label: 'US East (N. Virginia)' },
+  { value: 'us-west-2', label: 'US West (Oregon)' },
+  { value: 'eu-west-1', label: 'EU (Ireland)' },
+  { value: 'eu-central-1', label: 'EU (Frankfurt)' },
+  { value: 'ap-southeast-1', label: 'Asia Pacific (Singapore)' },
+]
 
 const retentionSchema = z.object({
   retention_policy_days: z.coerce.number().min(7).max(365),
@@ -30,6 +46,11 @@ export function DataPrivacyCard() {
   const { data, isLoading, error, refetch } = useDataPrivacy()
   const [exportLoading, setExportLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingRetention, setPendingRetention] = useState<number | null>(null)
+  const [pendingResidency, setPendingResidency] = useState<string | null>(null)
+  const [localResidency, setLocalResidency] = useState<string>('us-east-1')
+  const [saveLoading, setSaveLoading] = useState(false)
 
   const form = useForm<RetentionForm>({
     resolver: zodResolver(retentionSchema),
@@ -39,18 +60,49 @@ export function DataPrivacyCard() {
   useEffect(() => {
     if (data) {
       form.reset({ retention_policy_days: data.retention_policy_days })
+      setLocalResidency(data.data_residency ?? 'us-east-1')
     }
   }, [data, form])
 
-  const handleRetentionSubmit = form.handleSubmit(async (values) => {
-    try {
-      await settingsApi.updateDataPrivacy(values)
-      toast.success('Retention policy updated')
-      refetch()
-    } catch {
-      toast.error('Failed to update retention policy')
-    }
+  const handleRetentionSubmit = form.handleSubmit((values) => {
+    setPendingRetention(values.retention_policy_days)
+    setPendingResidency(null)
+    setConfirmOpen(true)
   })
+
+  const handleResidencySave = (value: string) => {
+    if (value === (data?.data_residency ?? 'us-east-1')) return
+    setPendingResidency(value)
+    setPendingRetention(null)
+    setConfirmOpen(true)
+  }
+
+  const handleConfirmSave = async () => {
+    setSaveLoading(true)
+    try {
+      const updates: { retention_policy_days?: number; data_residency?: string } = {}
+      if (pendingRetention != null) updates.retention_policy_days = pendingRetention
+      if (pendingResidency != null) updates.data_residency = pendingResidency
+      if (Object.keys(updates).length > 0) {
+        await settingsApi.updateDataPrivacy(updates)
+        toast.success('Compliance settings updated')
+        refetch()
+      }
+      setConfirmOpen(false)
+      setPendingRetention(null)
+      setPendingResidency(null)
+    } catch {
+      toast.error('Failed to update settings')
+    } finally {
+      setSaveLoading(false)
+    }
+  }
+
+  const handleCancelConfirm = () => {
+    setConfirmOpen(false)
+    setPendingRetention(null)
+    setPendingResidency(null)
+  }
 
   const handleExport = async () => {
     setExportLoading(true)
@@ -118,32 +170,97 @@ export function DataPrivacyCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form onSubmit={handleRetentionSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="retention">Session retention (days)</Label>
-            <Select
-              value={String(form.watch('retention_policy_days'))}
-              onValueChange={(v) => form.setValue('retention_policy_days', Number(v))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select retention period" />
-              </SelectTrigger>
-              <SelectContent>
-                {RETENTION_OPTIONS.map((days) => (
-                  <SelectItem key={days} value={String(days)}>
-                    {days} days
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">
-              Sessions older than this will be automatically deleted.
-            </p>
-          </div>
-          <Button type="submit" variant="outline" size="sm">
-            Save retention policy
-          </Button>
-        </form>
+        {/* Compliance Policy Settings */}
+        <div className="space-y-4">
+          <h4 className="font-medium">Compliance Policy</h4>
+          <form onSubmit={handleRetentionSubmit} className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <Label htmlFor="retention">Retention policy</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Sessions older than this will be automatically deleted.
+                  </p>
+                </div>
+              </div>
+              <Select
+                value={String(form.watch('retention_policy_days'))}
+                onValueChange={(v) => form.setValue('retention_policy_days', Number(v))}
+              >
+                <SelectTrigger id="retention" className="w-full sm:w-48">
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RETENTION_OPTIONS.map((days) => (
+                    <SelectItem key={days} value={String(days)}>
+                      {days} days
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <Globe className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <Label htmlFor="data-residency">Data residency</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Ensure data is stored in the selected region for compliance.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Select
+                  value={localResidency}
+                  onValueChange={setLocalResidency}
+                >
+                  <SelectTrigger id="data-residency" className="w-full sm:w-48">
+                    <SelectValue placeholder="Select region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DATA_RESIDENCY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleResidencySave(localResidency)}
+                  disabled={localResidency === (data?.data_residency ?? 'us-east-1')}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+            <Button type="submit" variant="outline" size="sm">
+              Save retention policy
+            </Button>
+          </form>
+        </div>
+
+        <Dialog open={confirmOpen} onOpenChange={(open) => !open && handleCancelConfirm()}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm compliance changes</DialogTitle>
+              <DialogDescription>
+                You are about to change compliance settings. This may affect data storage and retention. Continue?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelConfirm} disabled={saveLoading}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmSave} disabled={saveLoading}>
+                {saveLoading ? 'Saving…' : 'Confirm'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-border p-4 transition-colors hover:bg-muted/50">

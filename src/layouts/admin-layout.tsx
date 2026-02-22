@@ -24,6 +24,7 @@ const navItems = [
   { to: '/admin/users', icon: Users, label: 'Users' },
   { to: '/admin/agents', icon: Bot, label: 'Agents' },
   { to: '/admin/logs', icon: FileText, label: 'Logs' },
+  { to: '/admin/security-compliance', icon: Shield, label: 'Security & Compliance' },
   { to: '/admin/billing', icon: CreditCard, label: 'Billing' },
   { to: '/admin/sso', icon: KeyRound, label: 'SSO Settings' },
 ]

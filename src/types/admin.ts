@@ -1,5 +1,13 @@
-export type UserRole = 'admin' | 'user' | 'guest'
+export type UserRole = 'admin' | 'owner' | 'editor' | 'viewer' | 'user' | 'guest'
 export type UserStatus = 'active' | 'suspended'
+export type RbacRole = 'admin' | 'owner' | 'editor' | 'viewer'
+export type AuditLogStatus = 'success' | 'failure' | 'pending'
+export type AuditLogAction =
+  | 'role_change'
+  | 'compliance_setting_change'
+  | 'agent_access_modification'
+  | 'user_login'
+  | 'user_logout'
 export type AgentStatus = 'active' | 'inactive' | 'flagged'
 export type LogType = 'webhook' | 'error' | 'security'
 
@@ -60,4 +68,24 @@ export interface AdminSSOSetting {
   metadata_url: string
   created_at: string
   updated_at: string
+}
+
+export interface AuditLog {
+  id: string
+  user_id: string
+  user_name?: string
+  user_email?: string
+  action: AuditLogAction
+  timestamp: string
+  status: AuditLogStatus
+  details?: string
+}
+
+export interface ComplianceSettings {
+  id: string
+  user_id: string
+  data_residency: string
+  retention_period: string
+  pii_redaction: boolean
+  updated_at?: string
 }

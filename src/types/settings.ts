@@ -98,6 +98,10 @@ export interface SecuritySettings {
   id: string
   user_id: string
   two_fa_enabled: boolean
+  pii_redaction_enabled?: boolean
+  encryption_status?: 'enabled' | 'disabled'
+  tls_version?: string
+  certificate_details?: string
   session_activity?: Array<{
     id: string
     device?: string
@@ -112,6 +116,9 @@ export interface DataPrivacySettings {
   id: string
   user_id: string
   retention_policy_days: number
+  data_residency?: string
+  retention_options?: string[]
+  data_residency_options?: string[]
   export_requests?: Array<{
     id: string
     status: string

@@ -10,6 +10,7 @@ import {
   FileText,
   FileCode2,
   Settings,
+  Shield,
   Play,
   ChevronLeft,
   Check,
@@ -39,6 +40,7 @@ import {
   TestConsole,
   PublishSettings,
   PublicLinkSettings,
+  AccessControlPanel,
 } from '@/components/agent-builder'
 import { AgentWebhooksPanel } from '@/components/webhooks'
 import type {
@@ -62,6 +64,7 @@ const SIDEBAR_SECTIONS = [
   { id: 'test', label: 'Test console', icon: Play },
   { id: 'webhooks', label: 'Webhooks', icon: Webhook },
   { id: 'publish', label: 'Publish settings', icon: Settings },
+  { id: 'access', label: 'Access control', icon: Shield },
 ] as const
 
 type SectionId = (typeof SIDEBAR_SECTIONS)[number]['id']
@@ -616,6 +619,9 @@ export function AgentBuilderPage() {
               agentId={id}
               agentName={meta.name || persona.name || 'Agent'}
             />
+          )}
+          {activeSection === 'access' && (
+            <AccessControlPanel agentId={id} isNew={isNew} />
           )}
           {activeSection === 'publish' && (
             <div className="space-y-6">

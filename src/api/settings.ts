@@ -106,7 +106,7 @@ export async function fetchSecuritySettings(): Promise<SecuritySettings> {
 }
 
 export async function updateSecuritySettings(
-  data: Partial<Pick<SecuritySettings, 'two_fa_enabled' | 'ip_allowlist'>>
+  data: Partial<Pick<SecuritySettings, 'two_fa_enabled' | 'ip_allowlist' | 'pii_redaction_enabled'>>
 ): Promise<SecuritySettings> {
   return apiPut<SecuritySettings>('/security', data)
 }
@@ -116,9 +116,27 @@ export async function fetchDataPrivacy(): Promise<DataPrivacySettings> {
 }
 
 export async function updateDataPrivacy(
-  data: Partial<Pick<DataPrivacySettings, 'retention_policy_days'>>
+  data: Partial<Pick<DataPrivacySettings, 'retention_policy_days' | 'data_residency'>>
 ): Promise<DataPrivacySettings> {
   return apiPut<DataPrivacySettings>('/data-privacy', data)
+}
+
+export async function fetchCompliance(): Promise<{
+  data_residency: string
+  retention_period: string
+  pii_redaction: boolean
+  data_residency_options?: string[]
+  retention_options?: string[]
+}> {
+  return apiGet('/compliance')
+}
+
+export async function updateCompliance(data: {
+  data_residency?: string
+  retention_period?: string
+  pii_redaction?: boolean
+}): Promise<{ success: boolean }> {
+  return apiPost('/compliance', data)
 }
 
 export async function requestDataExport(): Promise<{ request_id: string }> {
