@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   LayoutDashboard,
   Bot,
@@ -13,6 +13,7 @@ import {
   Menu,
   LogOut,
   User,
+  CreditCard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useAuth, useSidebarState } from '@/contexts/auth-context'
+import { debounce } from '@/lib/utils'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview' },
@@ -40,10 +42,39 @@ const navItems = [
 export function DashboardLayout() {
   const { collapsed, toggle } = useSidebarState()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+
+  const isAgentsPage = location.pathname === '/dashboard/agents'
+  const urlSearch = isAgentsPage ? (searchParams.get('search') ?? '') : ''
+  const [searchInput, setSearchInput] = useState(urlSearch)
+  useEffect(() => {
+    if (isAgentsPage) setSearchInput(urlSearch)
+  }, [isAgentsPage, urlSearch])
+  const setSearchQuery = useCallback(
+    (value: string) => {
+      if (isAgentsPage) {
+        const next = new URLSearchParams(searchParams)
+        if (value) next.set('search', value)
+        else next.delete('search')
+        setSearchParams(next, { replace: true })
+      }
+    },
+    [isAgentsPage, searchParams, setSearchParams]
+  )
+  const debouncedSetSearch = useMemo(
+    () => debounce((v: string) => setSearchQuery(v), 300),
+    [setSearchQuery]
+  )
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchInput(value)
+      debouncedSetSearch(value)
+    },
+    [debouncedSetSearch]
+  )
 
   const handleLogout = () => {
     logout()
@@ -187,8 +218,8 @@ export function DashboardLayout() {
               <Input
                 placeholder="Search agents, sessions..."
                 className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
             <Button asChild>
@@ -221,6 +252,12 @@ export function DashboardLayout() {
                 <Link to="/dashboard/settings">
                   <User className="mr-2 h-4 w-4" />
                   Account
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/dashboard/settings#billing">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Billing
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
