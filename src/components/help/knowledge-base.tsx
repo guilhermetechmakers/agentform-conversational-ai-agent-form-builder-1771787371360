@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { SearchBar } from './search-bar'
 import { ArticleCard } from './article-card'
 import { useKnowledgeBase } from '@/hooks/use-help'
@@ -9,9 +10,20 @@ import { debounce } from '@/lib/utils'
 const ITEMS_PER_PAGE = 10
 
 export function KnowledgeBase() {
-  const [searchInput, setSearchInput] = useState('')
-  const [effectiveSearch, setEffectiveSearch] = useState<string | undefined>(undefined)
+  const [searchParams] = useSearchParams()
+  const initialSearch = searchParams.get('search') ?? ''
+  const [searchInput, setSearchInput] = useState(initialSearch)
+  const [effectiveSearch, setEffectiveSearch] = useState<string | undefined>(
+    initialSearch.trim() || undefined
+  )
   const [page, setPage] = useState(1)
+
+  useEffect(() => {
+    if (initialSearch) {
+      setSearchInput(initialSearch)
+      setEffectiveSearch(initialSearch.trim() || undefined)
+    }
+  }, [initialSearch])
 
   const debouncedSetSearch = useMemo(
     () =>
