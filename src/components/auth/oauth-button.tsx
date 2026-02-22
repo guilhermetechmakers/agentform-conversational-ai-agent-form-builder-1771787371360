@@ -1,4 +1,10 @@
 import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 const PROVIDER_CONFIG = {
@@ -51,6 +57,12 @@ const PROVIDER_CONFIG = {
 
 export type OAuthProvider = keyof typeof PROVIDER_CONFIG
 
+const OAUTH_TOOLTIPS: Record<OAuthProvider, string> = {
+  google: 'Sign in with your Google account. Quick and secure.',
+  microsoft: 'Sign in with your Microsoft or work account.',
+  github: 'Sign in with your GitHub account. Ideal for developers.',
+}
+
 export interface OAuthButtonProps {
   provider: OAuthProvider
   onClick?: () => void
@@ -65,22 +77,32 @@ export function OAuthButton({
   className,
 }: OAuthButtonProps) {
   const config = PROVIDER_CONFIG[provider]
+  const tooltip = OAUTH_TOOLTIPS[provider]
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'h-10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]',
-        config.className,
-        className
-      )}
-      aria-label={`Sign in with ${config.label}`}
-    >
-      {config.icon}
-      <span className="sr-only sm:not-sr-only sm:ml-2">{config.label}</span>
-    </Button>
+    <TooltipProvider delayDuration={400}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClick}
+            disabled={disabled}
+            className={cn(
+              'h-10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]',
+              config.className,
+              className
+            )}
+            aria-label={`Sign in with ${config.label}`}
+          >
+            {config.icon}
+            <span className="sr-only sm:not-sr-only sm:ml-2">{config.label}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

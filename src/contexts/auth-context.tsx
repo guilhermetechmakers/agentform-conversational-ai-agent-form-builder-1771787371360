@@ -2,8 +2,8 @@ import * as React from 'react'
 import type { User } from '@/types'
 import * as authApi from '@/api/auth'
 import type { ApiError } from '@/lib/api'
+import { setTokenRefreshHandler, TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/lib/api'
 
-const TOKEN_KEY = 'access_token'
 const REMEMBER_KEY = 'agentform-remember-me'
 
 function setRememberMe(remember: boolean): void {
@@ -12,6 +12,10 @@ function setRememberMe(remember: boolean): void {
   } catch {
     // ignore
   }
+}
+
+function getStorage(remember: boolean): Storage {
+  return remember ? localStorage : sessionStorage
 }
 
 interface AuthContextValue {
@@ -25,6 +29,8 @@ interface AuthContextValue {
     tosAccepted: boolean
   ) => Promise<{ needsVerification?: boolean }>
   logout: () => void
+  initiateOAuth: (provider: 'google' | 'microsoft' | 'github') => void
+  initiateSSO: () => Promise<void>
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
@@ -54,12 +60,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = React.useCallback(
     async (email: string, password: string, rememberMe = false) => {
       setRememberMe(rememberMe)
-      const storage = rememberMe ? localStorage : sessionStorage
+      const storage = getStorage(rememberMe)
       try {
         const res = await authApi.login({ email, password })
+        const accessToken = res.token ?? res.accessToken
+        const refreshToken = res.refreshToken
         localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(REFRESH_TOKEN_KEY)
         sessionStorage.removeItem(TOKEN_KEY)
-        storage.setItem(TOKEN_KEY, res.token)
+        sessionStorage.removeItem(REFRESH_TOKEN_KEY)
+        if (accessToken) storage.setItem(TOKEN_KEY, accessToken)
+        if (refreshToken) storage.setItem(REFRESH_TOKEN_KEY, refreshToken)
         setUser({ ...res.user, role: res.user.role ?? 'user' })
       } catch (err) {
         const apiErr = err as ApiError & { message?: string }
@@ -71,7 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           msg.includes('Network')
         if (isOffline) {
           localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem(REFRESH_TOKEN_KEY)
           sessionStorage.removeItem(TOKEN_KEY)
+          sessionStorage.removeItem(REFRESH_TOKEN_KEY)
           storage.setItem(TOKEN_KEY, 'mock-token')
           setUser({
             id: '1',
@@ -96,7 +109,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tosAccepted: boolean
     ): Promise<{ needsVerification?: boolean }> => {
       try {
-        await authApi.signup({ email, password, tosAccepted })
+        const res = await authApi.signup({ email, password, tosAccepted })
+        const accessToken = res.accessToken ?? res.token
+        const refreshToken = res.refreshToken
+        if (accessToken) {
+          localStorage.removeItem(TOKEN_KEY)
+          sessionStorage.removeItem(TOKEN_KEY)
+          localStorage.setItem(TOKEN_KEY, accessToken)
+          if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+          setUser({
+            id: res.user?.id ?? '1',
+            email: res.user?.email ?? email,
+            name: res.user?.name ?? email.split('@')[0],
+            role: res.user?.role ?? 'user',
+            createdAt: res.user?.createdAt ?? new Date().toISOString(),
+            updatedAt: res.user?.updatedAt ?? new Date().toISOString(),
+          })
+          return { needsVerification: false }
+        }
         return { needsVerification: true }
       } catch (err) {
         const apiErr = err as ApiError & { message?: string }
@@ -125,11 +155,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   )
 
-  const logout = React.useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
-    sessionStorage.removeItem(TOKEN_KEY)
-    setUser(null)
+  const logout = React.useCallback(async () => {
+    const refreshToken =
+      localStorage.getItem(REFRESH_TOKEN_KEY) ??
+      sessionStorage.getItem(REFRESH_TOKEN_KEY)
+    try {
+      await authApi.logout(refreshToken ?? undefined)
+    } catch {
+      // Proceed with local logout even if API fails
+    } finally {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+      sessionStorage.removeItem(TOKEN_KEY)
+      sessionStorage.removeItem(REFRESH_TOKEN_KEY)
+      setUser(null)
+    }
   }, [])
+
+  const initiateOAuth = React.useCallback(
+    (provider: 'google' | 'microsoft' | 'github') => {
+      authApi.initiateOAuth(provider)
+    },
+    []
+  )
+
+  const initiateSSO = React.useCallback(async () => {
+    try {
+      const res = await authApi.initiateSSO({
+        redirectUri: typeof window !== 'undefined' ? window.location.href : undefined,
+      })
+      if (res.redirectUrl) {
+        window.location.href = res.redirectUrl
+      }
+    } catch (err) {
+      const apiErr = err as ApiError & { message?: string }
+      throw new Error(apiErr?.message ?? 'Enterprise login is not configured')
+    }
+  }, [])
+
+  const refreshTokens = React.useCallback(async (): Promise<boolean> => {
+    const refreshToken =
+      localStorage.getItem(REFRESH_TOKEN_KEY) ??
+      sessionStorage.getItem(REFRESH_TOKEN_KEY)
+    if (!refreshToken) return false
+    try {
+      const res = await authApi.refreshTokens(refreshToken)
+      const accessToken = res.accessToken ?? res.token
+      const newRefresh = res.refreshToken
+      if (accessToken) {
+        const storage =
+          localStorage.getItem(REFRESH_TOKEN_KEY) ? localStorage : sessionStorage
+        storage.setItem(TOKEN_KEY, accessToken)
+        if (newRefresh) storage.setItem(REFRESH_TOKEN_KEY, newRefresh)
+        return true
+      }
+    } catch {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+      sessionStorage.removeItem(TOKEN_KEY)
+      sessionStorage.removeItem(REFRESH_TOKEN_KEY)
+      setUser(null)
+    }
+    return false
+  }, [])
+
+  React.useEffect(() => {
+    setTokenRefreshHandler(refreshTokens)
+    return () => setTokenRefreshHandler(null)
+  }, [refreshTokens])
 
   const value: AuthContextValue = {
     user,
@@ -138,6 +231,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     signup,
     logout,
+    initiateOAuth,
+    initiateSSO,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Bot, Loader2 } from 'lucide-react'
+import { Bot, Info, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,13 +16,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { PasswordInput } from '@/components/auth/password-input'
 import { AlertMessage } from '@/components/auth/alert-message'
 import { OAuthButton } from '@/components/auth/oauth-button'
+import { SSOButton } from '@/components/auth/sso-button'
 import { useAuth } from '@/contexts/auth-context'
+import { initiateOAuth } from '@/api/auth'
 import { cn } from '@/lib/utils'
 
 const PASSWORD_MIN_LENGTH = 8
+const PASSWORD_REQUIREMENTS =
+  'At least 8 characters, one letter, and one number required.'
+
 const passwordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
@@ -35,13 +46,19 @@ const loginSchema = z.object({
   rememberMe: z.boolean().optional(),
 })
 
-const signupSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: passwordSchema,
-  acceptTerms: z.boolean().refine((v) => v === true, {
-    message: 'You must accept the Terms of Service and Privacy Policy',
-  }),
-})
+const signupSchema = z
+  .object({
+    email: z.string().email('Please enter a valid email address'),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    acceptTerms: z.boolean().refine((v) => v === true, {
+      message: 'You must accept the Terms of Service and Privacy Policy',
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
 
 type LoginForm = z.infer<typeof loginSchema>
 type SignupForm = z.infer<typeof signupSchema>
@@ -62,7 +79,7 @@ export function LoginSignupPage() {
 
   const signupForm = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { email: '', password: '', acceptTerms: false },
+    defaultValues: { email: '', password: '', confirmPassword: '', acceptTerms: false },
   })
 
   const onLogin = async (data: LoginForm) => {
@@ -106,7 +123,12 @@ export function LoginSignupPage() {
   }
 
   const handleOAuth = (provider: 'google' | 'microsoft' | 'github') => {
-    toast.info(`${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in coming soon`)
+    initiateOAuth(provider)
+  }
+
+  const handleEnterpriseLogin = () => {
+    const apiBase = import.meta.env.VITE_API_URL ?? '/api'
+    window.location.href = `${apiBase}/auth/sso`
   }
 
   const handleModeSwitch = () => {
@@ -272,7 +294,7 @@ export function LoginSignupPage() {
               </div>
               <Button
                 type="submit"
-                className="w-full h-11"
+                className="w-full h-11 auth-primary"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -281,7 +303,7 @@ export function LoginSignupPage() {
                     Signing in...
                   </>
                 ) : (
-                  'Sign in'
+                  'Login'
                 )}
               </Button>
             </form>

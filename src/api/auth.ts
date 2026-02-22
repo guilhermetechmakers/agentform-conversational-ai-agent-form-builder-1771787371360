@@ -1,20 +1,26 @@
-import { apiPost } from '@/lib/api'
+import { apiPost, apiPostNoAuth } from '@/lib/api'
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
 export interface LoginRequest {
   email: string
   password: string
 }
 
+export interface AuthUser {
+  id: string
+  email: string
+  name: string
+  role?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface LoginResponse {
-  token: string
-  user: {
-    id: string
-    email: string
-    name: string
-    role?: string
-    createdAt: string
-    updatedAt: string
-  }
+  token?: string
+  accessToken?: string
+  refreshToken?: string
+  user: AuthUser
 }
 
 export interface SignupRequest {
@@ -25,6 +31,10 @@ export interface SignupRequest {
 
 export interface SignupResponse {
   message: string
+  accessToken?: string
+  refreshToken?: string
+  token?: string
+  user?: AuthUser
 }
 
 export interface OAuthRequest {
@@ -41,16 +51,85 @@ export interface PasswordUpdateRequest {
   newPassword: string
 }
 
+export interface RefreshResponse {
+  accessToken?: string
+  refreshToken?: string
+  token?: string
+}
+
+export interface LogoutRequest {
+  refreshToken?: string
+}
+
+function getAccessToken(res: LoginResponse | SignupResponse): string | undefined {
+  return res.accessToken ?? (res as LoginResponse).token
+}
+
+function getRefreshToken(res: LoginResponse | SignupResponse): string | undefined {
+  return res.refreshToken
+}
+
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  return apiPost<LoginResponse>('/auth/login', data)
+  const res = await apiPost<LoginResponse>('/auth/login', data)
+  return {
+    ...res,
+    token: getAccessToken(res) ?? res.token,
+  }
 }
 
 export async function signup(data: SignupRequest): Promise<SignupResponse> {
   return apiPost<SignupResponse>('/auth/signup', data)
 }
 
+export async function logout(refreshToken?: string): Promise<{ message: string }> {
+  if (refreshToken) {
+    try {
+      return await apiPostNoAuth<{ message: string }>('/auth/logout', { refreshToken })
+    } catch {
+      return { message: 'Logged out successfully' }
+    }
+  }
+  return { message: 'Logged out successfully' }
+}
+
+export async function refreshTokens(refreshToken: string): Promise<RefreshResponse> {
+  return apiPostNoAuth<RefreshResponse>('/auth/refresh', { refreshToken })
+}
+
 export async function oauth(data: OAuthRequest): Promise<LoginResponse> {
   return apiPost<LoginResponse>('/auth/oauth', data)
+}
+
+/** OAuth callback URL for redirect after provider auth. */
+export function getOAuthCallbackUrl(): string {
+  return typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : ''
+}
+
+/** Initiates OAuth flow by redirecting to provider. Backend constructs full URL. */
+export function getOAuthRedirectUrl(provider: 'google' | 'microsoft' | 'github'): string {
+  const base = API_BASE.replace(/\/$/, '')
+  return `${base}/auth/oauth/${provider}`
+}
+
+/** Redirects user to OAuth provider for sign-in. */
+export function initiateOAuth(provider: 'google' | 'microsoft' | 'github'): void {
+  window.location.href = getOAuthRedirectUrl(provider)
+}
+
+export interface SSOInitiateRequest {
+  enterpriseId?: string
+  redirectUri?: string
+}
+
+export interface SSOInitiateResponse {
+  redirectUrl: string
+}
+
+/** Initiates SAML/OIDC SSO flow for enterprise login. */
+export async function initiateSSO(
+  data?: SSOInitiateRequest
+): Promise<SSOInitiateResponse> {
+  return apiPost<SSOInitiateResponse>('/auth/sso/initiate', data ?? {})
 }
 
 export async function requestPasswordReset(

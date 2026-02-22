@@ -116,6 +116,16 @@
   border-color: #FFE066;
 }
 
+/* Auth page: Sky Blue accent for primary buttons per spec */
+.auth-primary {
+  background-color: #E6F4FF;
+  color: #191A1D;
+}
+.auth-primary:hover {
+  background-color: #cce8ff;
+  filter: brightness(1.02);
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
